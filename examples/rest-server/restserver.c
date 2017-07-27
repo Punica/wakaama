@@ -154,6 +154,28 @@ json_t * client_to_json(lwm2m_client_t *client)
 }
 
 
+int rest_clients_id_cb(const struct _u_request *req, struct _u_response *resp, void *context)
+{
+    lwm2m_context_t *lwm2m = (lwm2m_context_t *)context;
+    lwm2m_client_t *client;
+    uint32_t id = -1;
+
+    const char *sid = u_map_get(req->map_url, "id");
+    if (sscanf(sid, "%u", &id) != 1)
+    {
+        return U_CALLBACK_CONTINUE;
+    }
+
+    client = (lwm2m_client_t *)lwm2m_list_find((lwm2m_list_t *)lwm2m->clientList, id);
+    if (client == NULL)
+    {
+        return U_CALLBACK_CONTINUE;
+    }
+
+    ulfius_set_json_body_response(resp, 200, client_to_json(client));
+    return U_CALLBACK_CONTINUE;
+}
+
 int rest_clients_cb(const struct _u_request *req, struct _u_response *resp, void *context)
 {
     lwm2m_context_t *lwm2m = (lwm2m_context_t *)context;
@@ -209,6 +231,7 @@ int main(int argc, char *argv[])
     }
 
     ulfius_add_endpoint_by_val(&instance, "GET", "/clients", NULL, 0, &rest_clients_cb, lwm2m);
+    ulfius_add_endpoint_by_val(&instance, "GET", NULL, "/clients/:id", 0, &rest_clients_id_cb, lwm2m);
 
     if (ulfius_start_framework(&instance) != U_OK)
     {
