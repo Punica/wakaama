@@ -8,6 +8,7 @@
 #include <ulfius.h>
 
 #include "connection.h"
+#include "restserver.h"
 
 
 const char * binding_to_string(lwm2m_binding_t bind)
@@ -232,6 +233,18 @@ int main(int argc, char *argv[])
 
     ulfius_add_endpoint_by_val(&instance, "GET", "/clients", NULL, 0, &rest_clients_cb, lwm2m);
     ulfius_add_endpoint_by_val(&instance, "GET", NULL, "/clients/:id", 0, &rest_clients_id_cb, lwm2m);
+
+    /*
+     * mbed Device Connector based api
+     * https://docs.mbed.com/docs/mbed-device-connector-web-interfaces/en/latest/api-reference/
+     */
+    rest_context_t rest;
+    memset(&rest, 0, sizeof(rest_context_t));
+    rest.lwm2m = lwm2m;
+
+    // Endpoints
+    ulfius_add_endpoint_by_val(&instance, "GET", "/endpoints", NULL, 10, &rest_endpoints_cb, &rest);
+    ulfius_add_endpoint_by_val(&instance, "GET", "/endpoints", ":name", 10, &rest_endpoints_name_cb, &rest);
 
     if (ulfius_start_framework(&instance) != U_OK)
     {

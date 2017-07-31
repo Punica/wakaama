@@ -16,6 +16,7 @@ include_directories (${WAKAAMA_SOURCES_DIR} ${SHARED_INCLUDE_DIRS})
 
 SET(SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/restserver.c
+    ${CMAKE_CURRENT_LIST_DIR}/rest-endpoints.c
     )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${WAKAAMA_SOURCES} ${SHARED_SOURCES})
