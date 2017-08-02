@@ -89,7 +89,7 @@ int socket_receive(lwm2m_context_t *lwm2m, int sock)
     int nbytes;
     uint8_t buf[1500];
     struct sockaddr_storage addr;
-    socklen_t addrLen;
+    socklen_t addrLen = sizeof(addr);
     connection_t *con;
     static connection_t *connectionList = NULL;
 
