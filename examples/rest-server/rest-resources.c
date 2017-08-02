@@ -91,6 +91,7 @@ static void rest_async_cb(uint16_t clientID, lwm2m_uri_t *uriP, int status, lwm2
     assert(payload != NULL); // fail-fast or implement a way to indicate internal server error
     // TODO: base64 encode the payload
     memcpy(payload, data, dataLength);
+    payload[dataLength] = '\0';
 
     rest_async_cookie_complete(ctx->rest, ctx->cookie, coap_to_http_status(status), payload);
 
