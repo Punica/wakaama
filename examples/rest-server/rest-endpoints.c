@@ -57,7 +57,7 @@ static json_t * endpoint_resources_to_json(lwm2m_client_t *client)
     return jobjects;
 }
 
-static lwm2m_client_t * endpoint_find_client(lwm2m_client_t *list, const char *name)
+lwm2m_client_t * rest_endpoints_find_client(lwm2m_client_t *list, const char *name)
 {
     lwm2m_client_t *client;
 
@@ -96,7 +96,7 @@ int rest_endpoints_name_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *c
     lwm2m_client_t *client;
     const char *name = u_map_get(req->map_url, "name");
 
-    client = endpoint_find_client(rest->lwm2m->clientList, name);
+    client = rest_endpoints_find_client(rest->lwm2m->clientList, name);
     if (client == NULL)
     {
         ulfius_set_string_body_response(resp, 404, "");
