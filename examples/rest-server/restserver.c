@@ -247,7 +247,7 @@ int main(int argc, char *argv[])
     ulfius_add_endpoint_by_val(&instance, "GET", "/endpoints", ":name", 10, &rest_endpoints_name_cb, &rest);
 
     // Resources
-    ulfius_add_endpoint_by_val(&instance, "GET", "/endpoints", ":name/*", 10, &rest_resources_read_cb, &rest);
+    ulfius_add_endpoint_by_val(&instance, "*", "/endpoints", ":name/*", 10, &rest_resources_rwe_cb, &rest);
 
     // Notifications
     ulfius_add_endpoint_by_val(&instance, "GET", "/notification/pull", NULL, 10, &rest_notifications_pull_cb, &rest);

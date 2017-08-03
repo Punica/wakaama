@@ -79,6 +79,23 @@ static int coap_to_http_status(int status)
     return ((status >> 5) & 0x7) * 100 +  (status & 0x1F);
 }
 
+static int http_to_coap_format(const char *type)
+{
+    if (type == NULL)
+        return -1;
+
+    if (strcmp(type, "application/vnd.oma.lwm2m+tlv") == 0)
+        return LWM2M_CONTENT_TLV;
+
+    if (strcmp(type, "application/vnd.oma.lwm2m+json") == 0)
+        return LWM2M_CONTENT_JSON;
+
+    if (strcmp(type, "application/octet-stream") == 0)
+        return LWM2M_CONTENT_OPAQUE;
+
+    return -1;
+}
+
 static void rest_async_cb(uint16_t clientID, lwm2m_uri_t *uriP, int status, lwm2m_media_type_t format,
                           uint8_t *data, int dataLength, void *context)
 {
@@ -99,26 +116,64 @@ static void rest_async_cb(uint16_t clientID, lwm2m_uri_t *uriP, int status, lwm2
     free(context);
 }
 
-int rest_resources_read_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *context)
+int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *context)
 {
     rest_context_t *rest = (rest_context_t *)context;
-    int err = U_CALLBACK_CONTINUE;
+    enum {
+        RES_ACTION_UNDEFINED,
+        RES_ACTION_READ,
+        RES_ACTION_WRITE
+    } action = RES_ACTION_UNDEFINED;
     const char *name;
     lwm2m_client_t *client;
     char path[100];
     size_t len;
     lwm2m_uri_t uri;
     json_t *jresponse;
-    rest_async_context_t *async_context;
+    rest_async_context_t *async_context = NULL;
+    lwm2m_media_type_t format;
+    uint8_t *payload = NULL;
+    int size, length;
+    int res;
 
-    fprintf(stdout, "[READ-REQUEST] %s\n", req->http_url);
+    /*
+     * IMPORTANT!!! Error handling is split into two parts:
+     * First, validate client request and, in case of an error, fail fast and
+     * return any related 4xx code.
+     * Second, once the request is validated, start allocating neccessary
+     * resources and, in case of an error, jump (goto) to cleanup section at
+     * the end of the function.
+     */
+
+    if (strcmp(req->http_verb, "GET") == 0)
+    {
+        fprintf(stdout, "[READ-REQUEST] %s\n", req->http_url);
+        action = RES_ACTION_READ;
+    }
+    else if (strcmp(req->http_verb, "PUT") == 0)
+    {
+        fprintf(stdout, "[WRITE-REQUEST] %s\n", req->http_url);
+        action = RES_ACTION_WRITE;
+
+        format = http_to_coap_format(u_map_get_case(req->map_header, "Content-Type"));
+        if (format == -1)
+        {
+            ulfius_set_empty_body_response(resp, 415);
+            return U_CALLBACK_CONTINUE;
+        }
+    }
+    else
+    {
+        ulfius_set_empty_body_response(resp, 405);
+        return U_CALLBACK_CONTINUE;
+    }
 
     /* Find requested client */
     name = u_map_get(req->map_url, "name");
     client = rest_endpoints_find_client(rest->lwm2m->clientList, name);
     if (client == NULL)
     {
-        ulfius_set_string_body_response(resp, 404, "");
+        ulfius_set_empty_body_response(resp, 404);
         return U_CALLBACK_CONTINUE;
     }
 
@@ -145,11 +200,16 @@ int rest_resources_read_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *c
        return U_CALLBACK_CONTINUE;
     }
 
+    /*
+     * IMPORTANT! This is where server-error section starts and any error must
+     * go through the cleanup section. See comment above.
+     */
+    const int err = U_CALLBACK_ERROR;
+
     /* Create response callback context and async-response cookie */
     async_context = malloc(sizeof(rest_async_context_t));
     if (async_context == NULL)
     {
-        err = U_CALLBACK_ERROR;
         goto exit;
     }
 
@@ -157,19 +217,69 @@ int rest_resources_read_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *c
     async_context->cookie = rest_async_cookie_create(rest);
     if (async_context->cookie == NULL)
     {
-        err = U_CALLBACK_ERROR;
         goto exit;
     }
 
-    if (lwm2m_dm_read(rest->lwm2m, client->internalID, &uri, rest_async_cb, async_context) != 0)
+    switch (action)
     {
-        err = U_CALLBACK_CONTINUE;
-        goto exit;
+    case RES_ACTION_READ:
+        res = lwm2m_dm_read(
+                rest->lwm2m, client->internalID, &uri,
+                rest_async_cb, async_context
+        );
+        if (res != 0)
+        {
+            goto exit;
+        }
+        break;
+
+    case RES_ACTION_WRITE:
+#if 1
+        payload = malloc(req->binary_body_length);
+        if (payload == NULL)
+        {
+            goto exit;
+        }
+        length = req->binary_body_length;
+        memcpy(payload, req->binary_body, length);
+#else
+        // XXX: should content format be converted to TLV?
+        format = LWM2M_CONTENT_JSON;
+        size = lwm2m_data_parse(&uri, req->binary_body, req->binary_body_length, format, &data);
+        if (size < 1 || data == NULL)
+        {
+            goto exit;
+        }
+
+        format = LWM2M_CONTENT_TLV;
+        length = lwm2m_data_serialize(&uri, size, data, &format, &payload);
+        if (length < 1 || payload == NULL || format != LWM2M_CONTENT_TLV)
+        {
+            goto exit;
+        }
+#endif
+
+        res = lwm2m_dm_write(
+                rest->lwm2m, client->internalID, &uri,
+                format, payload, length,
+                rest_async_cb, async_context
+        );
+        if (res != 0)
+        {
+            goto exit;
+        }
+        break;
+
+    default:
+        assert(false); // if this happens, there's an error in the logic
+        break;
     }
 
     jresponse = json_object();
     json_object_set_new(jresponse, "async-response-id", json_string(async_context->cookie->id));
     ulfius_set_json_body_response(resp, 200, jresponse);
+
+    return U_CALLBACK_CONTINUE;
 
 exit:
     if (err == U_CALLBACK_ERROR)
@@ -181,6 +291,11 @@ exit:
                 free(async_context->cookie);
             }
             free(async_context);
+        }
+
+        if (payload != NULL)
+        {
+            free(payload);
         }
     }
 

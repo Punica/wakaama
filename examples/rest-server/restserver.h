@@ -50,7 +50,7 @@ int rest_endpoints_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *contex
 
 int rest_endpoints_name_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *context);
 
-int rest_resources_read_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *context);
+int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *context);
 
 
 int rest_notifications_pull_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *context);
