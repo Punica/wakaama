@@ -13,7 +13,7 @@ server.on('request', function reqHandler(req, resp) {
             resp.end(Math.random().toString());
         } else {
             resp.code = '4.05'; // Method not allowed
-            res.end();
+            resp.end();
         }
     } else if (path == '/1/1') {
         if (req.code == '0.01') { // GET
@@ -21,6 +21,14 @@ server.on('request', function reqHandler(req, resp) {
         } else if (req.code == '0.02') { // POST
             var payload = req.payload.toString();
             console.log('Write foobar:', payload);
+            resp.end();
+        } else {
+            resp.code = '4.05';
+            resp.end();
+        }
+    } else if (path = '/2/2/2') {
+        if (req.code == '0.02') { // POST
+            console.log('Execute f(' + req.payload.toString() + ')');
             resp.end();
         } else {
             resp.code = '4.05';

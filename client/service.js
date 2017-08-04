@@ -66,6 +66,16 @@ setTimeout(function() {
     });
 }, 8000);
 
+setTimeout(function() {
+    var args = {
+        data: "2,500,123",
+        headers: { "Content-Type": "application/octet-stream" }
+    };
+    client.post(url + 'endpoints/foobar/2/2/2', args, function (data, response) {
+        console.log('Response for exec:', response.statusCode, data);
+    });
+}, 9000);
+
 setInterval(function() {
     client.get(url + "notification/pull", function (data, response) {
         console.log(data);
