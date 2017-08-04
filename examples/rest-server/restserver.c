@@ -250,6 +250,7 @@ int main(int argc, char *argv[])
     ulfius_add_endpoint_by_val(&instance, "*", "/endpoints", ":name/*", 10, &rest_resources_rwe_cb, &rest);
 
     // Notifications
+    ulfius_add_endpoint_by_val(&instance, "PUT", "/notification/callback", NULL, 10, &rest_notifications_put_callback_cb, &rest);
     ulfius_add_endpoint_by_val(&instance, "GET", "/notification/pull", NULL, 10, &rest_notifications_pull_cb, &rest);
 
     if (ulfius_start_framework(&instance) != U_OK)
@@ -271,6 +272,12 @@ int main(int argc, char *argv[])
         if (res)
         {
             fprintf(stderr, "lwm2m_step() error: %d\n", res);
+        }
+
+        res = rest_step(&rest, &tv);
+        if (res)
+        {
+            fprintf(stderr, "rest_step() error: %d\n", res);
         }
 
         res = select(FD_SETSIZE, &readfds, NULL, NULL, &tv);

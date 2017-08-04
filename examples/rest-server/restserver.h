@@ -27,6 +27,7 @@ typedef struct
     lwm2m_context_t *lwm2m;
     rest_async_cookie_t *pendingResponseList;
     rest_async_cookie_t *completedResponseList;
+    json_t *callback;
 } rest_context_t;
 
 typedef struct
@@ -53,7 +54,13 @@ int rest_endpoints_name_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *c
 int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *context);
 
 
+json_t * rest_async_to_json(rest_async_cookie_t *async);
+
+int rest_notifications_put_callback_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *context);
+
 int rest_notifications_pull_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *context);
+
+int rest_step(rest_context_t *rest, struct timeval *tv);
 
 #endif // RESTSERVER_H
 
