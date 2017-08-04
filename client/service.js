@@ -34,15 +34,37 @@ client.get(url+'endpoints/', function (data, response) {
 
 setTimeout(function() {
     client.get(url + 'endpoints/foobar/3303/0/5700', function (data, response) {
-        console.log('Response for read:', data);
+        console.log('Response for read:', response.statusCode, data);
     });
 }, 5000);
 
 setTimeout(function() {
-    client.put(url + 'endpoints/foobar/3303/0/5700', function (data, response) {
-        console.log('Response for write:', data.toString());
+    var args = {
+        data: "foobar",
+        headers: { "Content-Type": "application/octet-stream" }
+    };
+    client.put(url + 'endpoints/foobar/1/1', args, function (data, response) {
+        console.log('Response for write:', response.statusCode, data);
     });
 }, 6000);
+
+setTimeout(function() {
+    var args = {
+        data: { test: "hello" },
+        headers: { "Content-Type": "application/json" }
+        //headers: { "Content-Type": "application/vnd.oma.lwm2m+json" }
+    };
+
+    client.put(url + 'endpoints/foobar/1/1', args, function (data, response) {
+        console.log('Response for write:', response.statusCode, data);
+    });
+}, 7000);
+
+setTimeout(function() {
+    client.get(url + 'endpoints/foobaz/3303/0/5700', function (data, response) {
+        console.log('Response for read:', response.statusCode, data);
+    });
+}, 8000);
 
 setInterval(function() {
     client.get(url + "notification/pull", function (data, response) {

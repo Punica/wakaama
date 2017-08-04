@@ -18,7 +18,7 @@ server.on('request', function reqHandler(req, resp) {
     } else if (path == '/1/1') {
         if (req.code == '0.01') { // GET
             resp.end('Foobar @ ' + req.url.toString());
-        } else if (req.code == '0.03') { // PUT
+        } else if (req.code == '0.02') { // POST
             var payload = req.payload.toString();
             console.log('Write foobar:', payload);
             resp.end();
