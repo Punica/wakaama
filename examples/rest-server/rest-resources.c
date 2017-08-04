@@ -122,7 +122,8 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
     enum {
         RES_ACTION_UNDEFINED,
         RES_ACTION_READ,
-        RES_ACTION_WRITE
+        RES_ACTION_WRITE,
+        RES_ACTION_EXEC,
     } action = RES_ACTION_UNDEFINED;
     const char *name;
     lwm2m_client_t *client;
@@ -154,18 +155,26 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
     {
         fprintf(stdout, "[WRITE-REQUEST] %s\n", req->http_url);
         action = RES_ACTION_WRITE;
+    }
+    else if (strcmp(req->http_verb, "POST") == 0)
+    {
+        fprintf(stdout, "[EXEC-REQUEST] %s\n", req->http_url);
+        action = RES_ACTION_EXEC;
+    }
+    else
+    {
+        ulfius_set_empty_body_response(resp, 405);
+        return U_CALLBACK_CONTINUE;
+    }
 
+    if ((action == RES_ACTION_WRITE) || (action == RES_ACTION_EXEC))
+    {
         format = http_to_coap_format(u_map_get_case(req->map_header, "Content-Type"));
         if (format == -1)
         {
             ulfius_set_empty_body_response(resp, 415);
             return U_CALLBACK_CONTINUE;
         }
-    }
-    else
-    {
-        ulfius_set_empty_body_response(resp, 405);
-        return U_CALLBACK_CONTINUE;
     }
 
     /* Find requested client */
@@ -234,6 +243,7 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
         break;
 
     case RES_ACTION_WRITE:
+    case RES_ACTION_EXEC:
 #if 1
         payload = malloc(req->binary_body_length);
         if (payload == NULL)
@@ -258,12 +268,27 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
             goto exit;
         }
 #endif
+        if (action == RES_ACTION_WRITE)
+        {
+            res = lwm2m_dm_write(
+                    rest->lwm2m, client->internalID, &uri,
+                    format, payload, length,
+                    rest_async_cb, async_context
+            );
+        }
+        else if (action == RES_ACTION_EXEC)
+        {
+            res = lwm2m_dm_execute(
+                    rest->lwm2m, client->internalID, &uri,
+                    format, payload, length,
+                    rest_async_cb, async_context
+            );
+        }
+        else
+        {
+            assert(false); // fail-fast on unhandled action
+        }
 
-        res = lwm2m_dm_write(
-                rest->lwm2m, client->internalID, &uri,
-                format, payload, length,
-                rest_async_cb, async_context
-        );
         if (res != 0)
         {
             goto exit;
