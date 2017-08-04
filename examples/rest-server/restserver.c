@@ -205,7 +205,7 @@ int main(int argc, char *argv[])
 
 
     /* Socket section */
-    sock = create_socket("5432", AF_INET6);
+    sock = create_socket("5555", AF_INET6);
     if (sock < 0)
     {
         fprintf(stderr, "Failed to create socket!\n");

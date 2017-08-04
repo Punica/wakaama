@@ -1,6 +1,8 @@
 var coap = require('coap');
 
 var server = coap.createServer({type: 'udp6'});
+const rport = 5555;
+
 
 server.on('request', function reqHandler(req, resp) {
     console.log('Received request:', req.code, req.url.toString());
@@ -42,7 +44,7 @@ function clientRegister(agent) {
     var reg = coap.request({
         agent: agent,
         host: '::1',
-        port: 5432,
+        port: rport,
         method: 'POST',
         pathname: 'rd',
         query: 'ep=' + name + '&lt=120&lwm2m=1.0&b=UQ',
@@ -60,7 +62,7 @@ function sendUpdate(agent, path) {
     var update = coap.request({
         agent: agent,
         host: '::1',
-        port: 5432,
+        port: rport,
         method: 'POST',
         pathname: path
     });
