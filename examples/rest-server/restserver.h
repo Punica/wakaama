@@ -5,6 +5,8 @@
 #include <liblwm2m.h>
 #include <ulfius.h>
 
+#include "http_codes.h"
+
 
 typedef struct _u_request ulfius_req_t;
 typedef struct _u_response ulfius_resp_t;

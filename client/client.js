@@ -26,7 +26,7 @@ server.on('request', function reqHandler(req, resp) {
             resp.code = '4.05';
             resp.end();
         }
-    } else if (path = '/2/2/2') {
+    } else if (path == '/2/2/2') {
         if (req.code == '0.02') { // POST
             console.log('Execute f(' + req.payload.toString() + ')');
             resp.end();
@@ -35,7 +35,7 @@ server.on('request', function reqHandler(req, resp) {
             resp.end();
         }
     } else {
-        resp.code = 404;
+        resp.code = '4.04';
         resp.end();
     }
 });

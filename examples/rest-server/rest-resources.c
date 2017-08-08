@@ -44,7 +44,7 @@ rest_async_cookie_t * rest_async_cookie_create(rest_context_t *rest)
         return NULL;
     }
 
-    snprintf(cookie->id, sizeof(cookie->id), "%u#%02x%02x-%02x-%02x-%02x-%02x",
+    snprintf(cookie->id, sizeof(cookie->id), "%u#%04x%04x-%04x-%04x-%04x-%04x",
             ts, r[0], r[1], r[2], r[3], r[4], r[5]);
 
     rest->pendingResponseList = REST_LIST_ADD(rest->pendingResponseList, cookie);
@@ -75,8 +75,18 @@ int rest_async_cookie_complete(rest_context_t *rest, rest_async_cookie_t *cookie
 
 static int coap_to_http_status(int status)
 {
-    // This is not logically correct, only visually
-    return ((status >> 5) & 0x7) * 100 +  (status & 0x1F);
+    switch (status)
+    {
+    case COAP_204_CHANGED:
+    case COAP_205_CONTENT:
+        return HTTP_200_OK;
+
+    case COAP_404_NOT_FOUND:
+        return HTTP_404_NOT_FOUND;
+
+    default:
+        return -(((status >> 5) & 0x7) * 100 +  (status & 0x1F));
+    }
 }
 
 static int http_to_coap_format(const char *type)
@@ -182,7 +192,7 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
     client = rest_endpoints_find_client(rest->lwm2m->clientList, name);
     if (client == NULL)
     {
-        ulfius_set_empty_body_response(resp, 404);
+        ulfius_set_empty_body_response(resp, 410);
         return U_CALLBACK_CONTINUE;
     }
 
@@ -198,6 +208,7 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
     // this is probaly redundant if there's only one matching ulfius filter
     if (strncmp(path, req->http_url, len) != 0)
     {
+        ulfius_set_empty_body_response(resp, 404);
         return U_CALLBACK_CONTINUE;
     }
 
@@ -206,7 +217,8 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
 
     if (lwm2m_stringToUri(path, strlen(path), &uri) == 0)
     {
-       return U_CALLBACK_CONTINUE;
+        ulfius_set_empty_body_response(resp, 404);
+        return U_CALLBACK_CONTINUE;
     }
 
     /*
@@ -302,7 +314,7 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
 
     jresponse = json_object();
     json_object_set_new(jresponse, "async-response-id", json_string(async_context->cookie->id));
-    ulfius_set_json_body_response(resp, 200, jresponse);
+    ulfius_set_json_body_response(resp, 202, jresponse);
 
     return U_CALLBACK_CONTINUE;
 

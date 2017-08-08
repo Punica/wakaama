@@ -99,11 +99,11 @@ int rest_endpoints_name_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *c
     client = rest_endpoints_find_client(rest->lwm2m->clientList, name);
     if (client == NULL)
     {
-        ulfius_set_string_body_response(resp, 404, "");
-        return U_CALLBACK_CONTINUE;
+        ulfius_set_empty_body_response(resp, 404);
+        return U_CALLBACK_COMPLETE;
     }
 
     ulfius_set_json_body_response(resp, 200, endpoint_resources_to_json(client));
-    return U_CALLBACK_CONTINUE;
+    return U_CALLBACK_COMPLETE;
 }
 
