@@ -4,7 +4,7 @@
   "description": "NodeJS test suite for wakaama's LwM2M server with REST API",
   "main": "index.js",
   "scripts": {
-    "test": "mocha"
+    "test": "mocha *.spec.js"
   },
   "author": "Giedrius Medzevičius <giedrius@8devices.com>",
   "license": "MIT",
