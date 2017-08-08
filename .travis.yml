@@ -1,0 +1,15 @@
+language: c
+
+compiler: 
+  - gcc
+
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -y libmicrohttpd-dev libjansson-dev
+#  - sudo apt-get install -y libcurl4-gnutls-dev libgnutls28-dev libgcrypt20-dev
+
+install:
+  - ./.travis/install_ulfius.sh
+
+script:
+  - mkdir build && cd build && cmake ../examples/rest-server && make
