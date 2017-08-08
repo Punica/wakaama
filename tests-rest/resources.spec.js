@@ -8,7 +8,7 @@ var client = require('./client-if');
 
 chai.use(chai_http);
 
-describe('Endpoints interface', function () {
+describe('Resources interface', function () {
   before(function (done) {
     var self = this;
 
