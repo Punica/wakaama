@@ -73,16 +73,6 @@ describe('Resources interface', function () {
         });
     });
 
-    it('should return 415 for unsupported content type', function (done) {
-      chai.request(server)
-        .get('/endpoints/'+client.name+'/1/1')
-        .set('Accept', 'application/foobar')
-        .end(function (err, res) {
-          res.should.have.status(415);
-          done();
-        });
-    });
-
     it('response should return 200 and valid payload', function (done) {
       var self = this;
       this.timeout(30000);
