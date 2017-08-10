@@ -2,10 +2,10 @@
 #ifndef HTTP_CODES_H
 #define HTTP_CODES_H
 
-#define HTTP_200_OK 200
-#define HTTP_201_CREATED 201
-#define HTTP_202_ACCEPTED 202
-#define HTTP_204_NO_CONTENT 204
+#define HTTP_200_OK                 200
+#define HTTP_201_CREATED            201
+#define HTTP_202_ACCEPTED           202
+#define HTTP_204_NO_CONTENT         204
 
 #define HTTP_400_BAD_REQUEST        400
 #define HTTP_401_UNAUTHORIZES       401
