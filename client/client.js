@@ -2,7 +2,8 @@ var coap = require('coap');
 
 var server = coap.createServer({type: 'udp6'});
 const rport = 5555;
-
+const UPDATE_PERIOD = 7500;
+const OBSERVE_PERIOD = 3000;
 
 server.on('request', function reqHandler(req, resp) {
     console.log('Received request:', req.code, req.url.toString());
@@ -10,7 +11,16 @@ server.on('request', function reqHandler(req, resp) {
 
     if (path == '/3303/0/5700') {
         if (req.code == '0.01') {  // GET
-            resp.end(Math.random().toString());
+            var observe = req.headers['Observe'];
+
+            if (observe === 0) {
+                var interval = setInterval(function () {
+                    resp.write(Math.random().toString());
+                }, OBSERVE_PERIOD);
+                resp.write(Math.random().toString());
+            } else {
+                resp.end(Math.random().toString());
+            }
         } else {
             resp.code = '4.05'; // Method not allowed
             resp.end();
@@ -62,7 +72,7 @@ function clientRegister(agent) {
     reg.on('response', function(res) {
         var updatePath = '/rd/' + res.headers['Location-Path'];
         console.log('Registered as ', updatePath);
-        setInterval(function () { sendUpdate(agent, updatePath); }, 15*1000);
+        setInterval(function () { sendUpdate(agent, updatePath); }, UPDATE_PERIOD);
     });
 }
 
