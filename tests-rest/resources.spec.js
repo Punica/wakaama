@@ -16,7 +16,7 @@ describe('Resources interface', function () {
 
     self.events = new events.EventEmitter();
     // TODO: swap interval with long-poll once server supports it
-    setInterval(function () {
+    self.interval = setInterval(function () {
       chai.request(server)
         .get('/notification/pull')
         .end(function (err, res) {
@@ -33,6 +33,10 @@ describe('Resources interface', function () {
     client.connect(server.address(), function (err, res) {
       done();
     });
+  });
+
+  after(function () {
+    clearInterval(this.interval);
   });
 
   describe('GET /endpoints/{endpoint-name}/{resource-path}', function () {
