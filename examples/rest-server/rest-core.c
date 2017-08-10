@@ -4,6 +4,11 @@
 #include "restserver.h"
 
 
+void rest_add_async_response(rest_context_t *rest, rest_async_cookie_t *cookie)
+{
+    rest->completedResponseList = REST_LIST_ADD(rest->completedResponseList, cookie);
+}
+
 int rest_step(rest_context_t *rest, struct timeval *tv)
 {
     ulfius_req_t request;

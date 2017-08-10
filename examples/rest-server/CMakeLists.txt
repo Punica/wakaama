@@ -20,6 +20,7 @@ SET(SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/rest-endpoints.c
     ${CMAKE_CURRENT_LIST_DIR}/rest-resources.c
     ${CMAKE_CURRENT_LIST_DIR}/rest-notifications.c
+    ${CMAKE_CURRENT_LIST_DIR}/rest-subscriptions.c
     ${CMAKE_CURRENT_LIST_DIR}/rest-list.c
     )
 

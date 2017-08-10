@@ -25,7 +25,7 @@ int rest_getrandom(void *buf, size_t buflen)
     return len;
 }
 
-rest_async_cookie_t * rest_async_cookie_create(rest_context_t *rest)
+rest_async_cookie_t * rest_async_cookie_new(void)
 {
     rest_async_cookie_t *cookie;
     uint32_t ts;
@@ -47,9 +47,44 @@ rest_async_cookie_t * rest_async_cookie_create(rest_context_t *rest)
     snprintf(cookie->id, sizeof(cookie->id), "%u#%04x%04x-%04x-%04x-%04x-%04x",
             ts, r[0], r[1], r[2], r[3], r[4], r[5]);
 
+    return cookie;
+}
+
+/*
+ * @deprecated
+ */
+rest_async_cookie_t * rest_async_cookie_create(rest_context_t *rest)
+{
+    rest_async_cookie_t *cookie;
+    uint32_t ts;
+    uint16_t r[6];
+
+    cookie = rest_async_cookie_new();
+    if (cookie == NULL)
+    {
+        return NULL;
+    }
+
     rest->pendingResponseList = REST_LIST_ADD(rest->pendingResponseList, cookie);
 
     return cookie;
+}
+
+rest_async_cookie_t * rest_async_cookie_clone(const rest_async_cookie_t * cookie)
+{
+    rest_async_cookie_t *clone;
+
+    clone = rest_async_cookie_new();
+    if (clone == NULL)
+    {
+        return NULL;
+    }
+
+    memcpy(clone->id, cookie->id, sizeof(clone->id));
+
+    // XXX: should the payload be cloned?
+
+    return clone;
 }
 
 void rest_async_cookie_destroy(rest_context_t *rest, rest_async_cookie_t *cookie)
@@ -62,6 +97,32 @@ void rest_async_cookie_destroy(rest_context_t *rest, rest_async_cookie_t *cookie
     free(cookie);
 }
 
+int rest_async_cookie_set(rest_async_cookie_t *cookie, int status,
+                          const uint8_t *payload, size_t length)
+{
+    if (cookie->payload != NULL)
+    {
+        free((void *)cookie->payload);
+        cookie->payload = NULL;
+    }
+
+    cookie->payload = malloc(length);
+    if (cookie->payload == NULL)
+    {
+        return -1;
+    }
+
+    cookie->status = status;
+
+    // TODO: base64 encoding
+    memcpy((void *)cookie->payload, payload, length);
+
+    return 0;
+}
+
+/*
+ * @deprecated
+ */
 int rest_async_cookie_complete(rest_context_t *rest, rest_async_cookie_t *cookie,
                                int status, const char *payload)
 {
@@ -73,7 +134,7 @@ int rest_async_cookie_complete(rest_context_t *rest, rest_async_cookie_t *cookie
     rest->completedResponseList = REST_LIST_ADD(rest->completedResponseList, cookie);
 }
 
-static int coap_to_http_status(int status)
+int coap_to_http_status(int status)
 {
     switch (status)
     {
