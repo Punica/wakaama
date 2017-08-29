@@ -1,5 +1,6 @@
 
 #include <assert.h>
+#include <b64/cencode.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
@@ -97,6 +98,29 @@ void rest_async_cookie_destroy(rest_context_t *rest, rest_async_cookie_t *cookie
     free(cookie);
 }
 
+const char * base64_encode(const uint8_t *data, size_t length)
+{
+    char *buffer, *out;
+    size_t lenb64 = ((length + 2) / 3) * 4 + 1; // +1 for null-terminator
+    base64_encodestate state;
+
+    buffer = malloc(lenb64);
+    if (buffer == NULL)
+    {
+        return NULL;
+    }
+
+    base64_init_encodestate(&state);
+    out = buffer;
+    out += base64_encode_block(data, length, out, &state);
+    out += base64_encode_blockend(out, &state);
+    out[-1] = '\0'; // replace '\n' with null-terminator
+
+    assert((out - buffer) <= lenb64);
+
+    return buffer;
+}
+
 int rest_async_cookie_set(rest_async_cookie_t *cookie, int status,
                           const uint8_t *payload, size_t length)
 {
@@ -106,16 +130,13 @@ int rest_async_cookie_set(rest_async_cookie_t *cookie, int status,
         cookie->payload = NULL;
     }
 
-    cookie->payload = malloc(length);
+    cookie->payload = base64_encode(payload, length);
     if (cookie->payload == NULL)
     {
         return -1;
     }
 
     cookie->status = status;
-
-    // TODO: base64 encoding
-    memcpy((void *)cookie->payload, payload, length);
 
     return 0;
 }
@@ -171,15 +192,12 @@ static void rest_async_cb(uint16_t clientID, lwm2m_uri_t *uriP, int status, lwm2
                           uint8_t *data, int dataLength, void *context)
 {
     rest_async_context_t *ctx = (rest_async_context_t *)context;
-    char *payload;
+    const char *payload;
 
     fprintf(stdout, "[ASYNC-RESPONSE] id=%s status=%d\n", ctx->cookie->id, coap_to_http_status(status));
 
-    payload = malloc(dataLength+1);
+    payload = base64_encode(data, dataLength);
     assert(payload != NULL); // fail-fast or implement a way to indicate internal server error
-    // TODO: base64 encode the payload
-    memcpy(payload, data, dataLength);
-    payload[dataLength] = '\0';
 
     rest_async_cookie_complete(ctx->rest, ctx->cookie, coap_to_http_status(status), payload);
 

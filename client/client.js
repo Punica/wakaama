@@ -27,7 +27,7 @@ server.on('request', function reqHandler(req, resp) {
         }
     } else if (path == '/1/1') {
         if (req.code == '0.01') { // GET
-            resp.end('Foobar @ ' + req.url.toString());
+            resp.end('Foobar');
         } else if (req.code == '0.02') { // POST
             var payload = req.payload.toString();
             console.log('Write foobar:', payload);

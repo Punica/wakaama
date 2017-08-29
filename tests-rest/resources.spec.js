@@ -91,7 +91,7 @@ describe('Resources interface', function () {
           self.events.on('async-response', resp => {
             if (resp.id == id) {
               resp.status.should.be.eql(200);
-              // TODO: validate payload
+              resp.payload.should.be.eql('Rm9vYmFy'); // 'Foobar' in base64
               done();
             }
           });
