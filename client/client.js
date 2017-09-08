@@ -65,7 +65,7 @@ function clientRegister(agent) {
         port: rport,
         method: 'POST',
         pathname: 'rd',
-        query: 'ep=' + name + '&lt=120&lwm2m=1.0&b=UQ',
+        query: 'ep=' + name + '&lt=' + UPDATE_PERIOD*3 + '&lwm2m=1.0&b=UQ',
     });
     reg.end("</3303/0>");
 
