@@ -394,6 +394,7 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
     jresponse = json_object();
     json_object_set_new(jresponse, "async-response-id", json_string(async_context->cookie->id));
     ulfius_set_json_body_response(resp, 202, jresponse);
+    json_decref(jresponse);
 
     return U_CALLBACK_CONTINUE;
 

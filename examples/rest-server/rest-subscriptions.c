@@ -133,6 +133,7 @@ int rest_subscriptions_put_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void
     jresponse = json_object();
     json_object_set_new(jresponse, "async-response-id", json_string(async_context->cookie->id));
     ulfius_set_json_body_response(resp, 202, jresponse);
+    json_decref(jresponse);
 
     return U_CALLBACK_CONTINUE;
 

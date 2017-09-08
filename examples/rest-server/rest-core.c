@@ -40,6 +40,7 @@ int rest_step(rest_context_t *rest, struct timeval *tv)
         // TODO: add headers
 
         ulfius_set_json_body_request(&request, jbody);
+        json_decref(jbody);
 
         ulfius_init_response(&response);
         res = ulfius_send_http_request(&request, &response);

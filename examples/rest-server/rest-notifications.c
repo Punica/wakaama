@@ -124,6 +124,7 @@ int rest_notifications_pull_cb(const ulfius_req_t *req, ulfius_resp_t *resp, voi
     }
 
     ulfius_set_json_body_response(resp, 200, jbody);
+    json_decref(jbody);
 
     return U_CALLBACK_CONTINUE;
 }
