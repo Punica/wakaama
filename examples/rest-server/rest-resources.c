@@ -51,26 +51,6 @@ rest_async_cookie_t * rest_async_cookie_new(void)
     return cookie;
 }
 
-/*
- * @deprecated
- */
-rest_async_cookie_t * rest_async_cookie_create(rest_context_t *rest)
-{
-    rest_async_cookie_t *cookie;
-    uint32_t ts;
-    uint16_t r[6];
-
-    cookie = rest_async_cookie_new();
-    if (cookie == NULL)
-    {
-        return NULL;
-    }
-
-    rest->pendingResponseList = REST_LIST_ADD(rest->pendingResponseList, cookie);
-
-    return cookie;
-}
-
 rest_async_cookie_t * rest_async_cookie_clone(const rest_async_cookie_t * cookie)
 {
     rest_async_cookie_t *clone;
@@ -141,20 +121,6 @@ int rest_async_cookie_set(rest_async_cookie_t *cookie, int status,
     return 0;
 }
 
-/*
- * @deprecated
- */
-int rest_async_cookie_complete(rest_context_t *rest, rest_async_cookie_t *cookie,
-                               int status, const char *payload)
-{
-    rest->pendingResponseList = REST_LIST_RM(rest->pendingResponseList, cookie);
-
-    cookie->status = status;
-    cookie->payload = payload;
-
-    rest->completedResponseList = REST_LIST_ADD(rest->completedResponseList, cookie);
-}
-
 int coap_to_http_status(int status)
 {
     switch (status)
@@ -193,13 +159,16 @@ static void rest_async_cb(uint16_t clientID, lwm2m_uri_t *uriP, int status, lwm2
 {
     rest_async_context_t *ctx = (rest_async_context_t *)context;
     const char *payload;
+    int err;
 
     fprintf(stdout, "[ASYNC-RESPONSE] id=%s status=%d\n", ctx->cookie->id, coap_to_http_status(status));
 
-    payload = base64_encode(data, dataLength);
-    assert(payload != NULL); // fail-fast or implement a way to indicate internal server error
+    ctx->rest->pendingResponseList = REST_LIST_RM(ctx->rest->pendingResponseList, ctx->cookie);
 
-    rest_async_cookie_complete(ctx->rest, ctx->cookie, coap_to_http_status(status), payload);
+    err = rest_async_cookie_set(ctx->cookie, coap_to_http_status(status), data, dataLength);
+    assert(err == 0);
+
+    ctx->rest->completedResponseList = REST_LIST_ADD(ctx->rest->completedResponseList, ctx->cookie);
 
     // Free rest_async_context_t which was allocated in rest_resources_read_cb
     free(context);
@@ -314,7 +283,7 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
     }
 
     async_context->rest = rest;
-    async_context->cookie = rest_async_cookie_create(rest);
+    async_context->cookie = rest_async_cookie_new();
     if (async_context->cookie == NULL)
     {
         goto exit;
@@ -390,6 +359,7 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
         assert(false); // if this happens, there's an error in the logic
         break;
     }
+    rest->pendingResponseList = REST_LIST_ADD(rest->pendingResponseList, async_context->cookie);
 
     jresponse = json_object();
     json_object_set_new(jresponse, "async-response-id", json_string(async_context->cookie->id));
