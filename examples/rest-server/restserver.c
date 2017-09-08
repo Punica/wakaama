@@ -121,79 +121,6 @@ int socket_receive(lwm2m_context_t *lwm2m, int sock)
     return 0;
 }
 
-json_t * client_to_json(lwm2m_client_t *client)
-{
-    lwm2m_client_object_t *obj;
-    lwm2m_list_t *ins;
-    char buf[20]; // 13 bytes should be enough (i.e. max string "/65535/65535\0")
-
-    json_t *jclient = json_object();
-    json_object_set_new(jclient, "name", json_string(client->name));
-    json_object_set_new(jclient, "bind", json_string(binding_to_string(client->binding)));
-    json_object_set_new(jclient, "lifetime", json_integer(client->lifetime));
-
-    json_t *jobjects = json_array();
-    for (obj = client->objectList; obj != NULL; obj = obj->next)
-    {
-        if (obj->instanceList == NULL)
-        {
-            snprintf(buf, sizeof(buf), "/%d", obj->id);
-            json_array_append_new(jobjects, json_string(buf));
-        }
-        else
-        {
-            for (ins = obj->instanceList; ins != NULL; ins = ins->next)
-            {
-                snprintf(buf, sizeof(buf), "/%d/%d", obj->id, ins->id);
-                json_array_append_new(jobjects, json_string(buf));
-            }
-        }
-    }
-    json_object_set_new(jclient, "objects", jobjects);
-
-    return jclient;
-}
-
-
-int rest_clients_id_cb(const struct _u_request *req, struct _u_response *resp, void *context)
-{
-    lwm2m_context_t *lwm2m = (lwm2m_context_t *)context;
-    lwm2m_client_t *client;
-    uint32_t id = -1;
-
-    const char *sid = u_map_get(req->map_url, "id");
-    if (sscanf(sid, "%u", &id) != 1)
-    {
-        return U_CALLBACK_CONTINUE;
-    }
-
-    client = (lwm2m_client_t *)lwm2m_list_find((lwm2m_list_t *)lwm2m->clientList, id);
-    if (client == NULL)
-    {
-        return U_CALLBACK_CONTINUE;
-    }
-
-    ulfius_set_json_body_response(resp, 200, client_to_json(client));
-    return U_CALLBACK_CONTINUE;
-}
-
-int rest_clients_cb(const struct _u_request *req, struct _u_response *resp, void *context)
-{
-    lwm2m_context_t *lwm2m = (lwm2m_context_t *)context;
-    lwm2m_client_t *client;
-
-    json_t *jbody = json_object();
-    json_t *jclients = json_array();
-    for (client = lwm2m->clientList; client != NULL; client = client->next)
-    {
-        json_array_append_new(jclients, client_to_json(client));
-    }
-    json_object_set_new(jbody, "clients", jclients);
-
-    ulfius_set_json_body_response(resp, 200, jbody);
-    return U_CALLBACK_CONTINUE;
-}
-
 int main(int argc, char *argv[])
 {
     int sock;
@@ -230,9 +157,6 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Failed to initialize REST server!\n");
         return -1;
     }
-
-    ulfius_add_endpoint_by_val(&instance, "GET", "/clients", NULL, 0, &rest_clients_cb, lwm2m);
-    ulfius_add_endpoint_by_val(&instance, "GET", NULL, "/clients/:id", 0, &rest_clients_id_cb, lwm2m);
 
     /*
      * mbed Device Connector based api
