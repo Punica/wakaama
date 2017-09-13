@@ -18,6 +18,8 @@ typedef struct
 
     // rest-core
     json_t *callback;
+
+    // rest-notifications
     rest_notif_registration_t   *registrationList;
     rest_notif_update_t         *updateList;
     rest_notif_deregistration_t *deregistrationList;
@@ -46,7 +48,9 @@ void rest_notify_deregistration(rest_context_t *rest, rest_notif_deregistration_
 void rest_notify_timeout(rest_context_t *rest, rest_notif_timeout_t *timeout);
 void rest_notify_async_response(rest_context_t *rest, rest_notif_async_response_t *resp);
 
-json_t * rest_async_response_to_json(rest_async_response_t *async);
+json_t * rest_notifications_json(rest_context_t *rest);
+
+void rest_notifications_clear(rest_context_t *rest);
 
 int rest_notifications_put_callback_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *context);
 

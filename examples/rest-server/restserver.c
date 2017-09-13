@@ -34,26 +34,51 @@ const char * binding_to_string(lwm2m_binding_t bind)
 
 void client_monitor_cb(uint16_t clientID, lwm2m_uri_t * uriP, int status, lwm2m_media_type_t format, uint8_t * data, int dataLength, void * userData)
 {
-    lwm2m_context_t *lwm2m = (lwm2m_context_t *)userData;
+    rest_context_t *rest = (rest_context_t *)userData;
+    lwm2m_context_t *lwm2m = rest->lwm2m;
     lwm2m_client_t *client;
     lwm2m_client_object_t *obj;
     lwm2m_list_t *ins;
+
+    client = (lwm2m_client_t *)lwm2m_list_find((lwm2m_list_t *)lwm2m->clientList, clientID);
 
     switch (status)
     {
     case COAP_201_CREATED:
     case COAP_204_CHANGED:
-
         if (status == COAP_201_CREATED)
         {
+            rest_notif_registration_t *regNotif = rest_notif_registration_new();
+
+            if (regNotif != NULL)
+            {
+                rest_notif_registration_set(regNotif, client->name);
+                rest_notify_registration(rest, regNotif);
+            }
+            else
+            {
+                fprintf(stderr, "[MONITOR] Failed to allocate registration notification!\n");
+            }
+
             fprintf(stdout, "[MONITOR] Client %d registered.\n", clientID);
         } 
         else 
         {
+            rest_notif_update_t *updateNotif = rest_notif_update_new();
+
+            if (updateNotif != NULL)
+            {
+                rest_notif_update_set(updateNotif, client->name);
+                rest_notify_update(rest, updateNotif);
+            }
+            else
+            {
+                fprintf(stderr, "[MONITOR] Failed to allocate update notification!\n");
+            }
+
             fprintf(stdout, "[MONITOR] Client %d updated.\n", clientID);
         }
         
-        client = (lwm2m_client_t *)lwm2m_list_find((lwm2m_list_t *)lwm2m->clientList, clientID);
         fprintf(stdout, "\tname: '%s'\n", client->name);
         fprintf(stdout, "\tbind: '%s'\n", binding_to_string(client->binding));
         fprintf(stdout, "\tlifetime: %d\n", client->lifetime);
@@ -76,8 +101,22 @@ void client_monitor_cb(uint16_t clientID, lwm2m_uri_t * uriP, int status, lwm2m_
         break;
 
     case COAP_202_DELETED:
+    {
+        rest_notif_deregistration_t *deregNotif = rest_notif_deregistration_new();
+
+        if (deregNotif != NULL)
+        {
+            rest_notif_deregistration_set(deregNotif, client->name);
+            rest_notify_deregistration(rest, deregNotif);
+        }
+        else
+        {
+            fprintf(stderr, "[MONITOR] Failed to allocate deregistration notification!\n");
+        }
+
         fprintf(stdout, "[MONITOR] Client %d deregistered.\n", clientID);
         break;
+    }
     default:
         fprintf(stdout, "[MONITOR] Client %d status update %d.\n", clientID, status);
         break;
@@ -124,12 +163,12 @@ int socket_receive(lwm2m_context_t *lwm2m, int sock)
 int main(int argc, char *argv[])
 {
     int sock;
-    struct sockaddr_in saddr;
     fd_set readfds;
     struct timeval tv;
     int res;
-    lwm2m_context_t *lwm2m;
+    rest_context_t rest;
 
+    memset(&rest, 0, sizeof(rest_context_t));
 
     /* Socket section */
     sock = create_socket("5555", AF_INET6);
@@ -140,14 +179,14 @@ int main(int argc, char *argv[])
     }
 
     /* Server section */
-    lwm2m = lwm2m_init(NULL);
-    if (lwm2m == NULL)
+    rest.lwm2m = lwm2m_init(NULL);
+    if (rest.lwm2m == NULL)
     {
         fprintf(stderr, "Failed to create LwM2M server!\n");
         return -1;
     }
     
-    lwm2m_set_monitoring_callback(lwm2m, client_monitor_cb, lwm2m);
+    lwm2m_set_monitoring_callback(rest.lwm2m, client_monitor_cb, &rest);
 
     /* REST server section */
     struct _u_instance instance;
@@ -162,9 +201,6 @@ int main(int argc, char *argv[])
      * mbed Device Connector based api
      * https://docs.mbed.com/docs/mbed-device-connector-web-interfaces/en/latest/api-reference/
      */
-    rest_context_t rest;
-    memset(&rest, 0, sizeof(rest_context_t));
-    rest.lwm2m = lwm2m;
 
     // Endpoints
     ulfius_add_endpoint_by_val(&instance, "GET", "/endpoints", NULL, 10, &rest_endpoints_cb, &rest);
@@ -195,7 +231,7 @@ int main(int argc, char *argv[])
         tv.tv_sec = 5;
         tv.tv_usec = 0;
 
-        res = lwm2m_step(lwm2m, &tv.tv_sec);
+        res = lwm2m_step(rest.lwm2m, &tv.tv_sec);
         if (res)
         {
             fprintf(stderr, "lwm2m_step() error: %d\n", res);
@@ -215,7 +251,7 @@ int main(int argc, char *argv[])
 
         if (FD_ISSET(sock, &readfds))
         {
-            socket_receive(lwm2m, sock);
+            socket_receive(rest.lwm2m, sock);
         }
 
     }
@@ -223,3 +259,4 @@ int main(int argc, char *argv[])
     ulfius_stop_framework(&instance);
     ulfius_clean_instance(&instance);
 }
+

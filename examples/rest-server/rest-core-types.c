@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #include <b64/cencode.h>
 
@@ -90,7 +91,7 @@ const char * base64_encode(const uint8_t *data, size_t length)
 
     base64_init_encodestate(&state);
     out = buffer;
-    out += base64_encode_block(data, length, out, &state);
+    out += base64_encode_block((const char *)data, length, out, &state);
     out += base64_encode_blockend(out, &state);
     out[-1] = '\0'; // replace '\n' with null-terminator
 
@@ -114,6 +115,162 @@ int rest_async_response_set(rest_async_response_t *response, int status,
     if (response->payload == NULL)
     {
         return -1;
+    }
+
+    return 0;
+}
+
+rest_notif_registration_t * rest_notif_registration_new(void)
+{
+    rest_notif_registration_t *registration;
+
+    registration = malloc(sizeof(rest_notif_registration_t));
+    if (registration == NULL)
+    {
+        return NULL;
+    }
+
+    memset(registration, 0, sizeof(rest_notif_registration_t));
+
+    return registration;
+}
+
+void rest_notif_registration_delete(rest_notif_registration_t *registration)
+{
+    if (registration->name)
+    {
+        free((void *)registration->name);
+        registration->name = NULL;
+    }
+
+    free(registration);
+}
+
+int rest_notif_registration_set(rest_notif_registration_t *registration, const char *name)
+{
+    size_t length;
+
+    if (registration->name)
+    {
+        free((void *)registration->name);
+        registration->name = NULL;
+    }
+
+    if (name != NULL)
+    {
+        length = strlen(name);
+
+        registration->name = malloc(length);
+        if (registration->name == NULL)
+        {
+            return -1;
+        }
+
+        strcpy((char *)registration->name, name);
+    }
+
+    return 0;
+}
+
+rest_notif_update_t * rest_notif_update_new(void)
+{
+    rest_notif_update_t *update;
+
+    update = malloc(sizeof(rest_notif_update_t));
+    if (update == NULL)
+    {
+        return NULL;
+    }
+
+    memset(update, 0, sizeof(rest_notif_update_t));
+
+    return update;
+}
+
+void rest_notif_update_delete(rest_notif_update_t *update)
+{
+    if (update->name)
+    {
+        free((void *)update->name);
+        update->name = NULL;
+    }
+
+    free(update);
+}
+
+int rest_notif_update_set(rest_notif_update_t *update, const char *name)
+{
+    size_t length;
+
+    if (update->name)
+    {
+        free((void *)update->name);
+        update->name = NULL;
+    }
+
+    if (name != NULL)
+    {
+        length = strlen(name);
+
+        update->name = malloc(length);
+        if (update->name == NULL)
+        {
+            return -1;
+        }
+
+        strcpy((char *)update->name, name);
+    }
+
+    return 0;
+}
+
+rest_notif_deregistration_t * rest_notif_deregistration_new(void)
+{
+    rest_notif_deregistration_t *deregistration;
+
+    deregistration = malloc(sizeof(rest_notif_deregistration_t));
+    if (deregistration == NULL)
+    {
+        return NULL;
+    }
+
+    memset(deregistration, 0, sizeof(rest_notif_deregistration_t));
+
+    return deregistration;
+}
+
+void rest_notif_deregistration_delete(rest_notif_deregistration_t *deregistration)
+{
+    if (deregistration->name)
+    {
+        free((void *)deregistration->name);
+        deregistration->name = NULL;
+    }
+
+    free(deregistration);
+}
+
+int rest_notif_deregistration_set(rest_notif_deregistration_t *deregistration, const char *name)
+{
+    size_t length;
+
+    if (deregistration->name)
+    {
+        free((void *)deregistration->name);
+        deregistration->name = NULL;
+    }
+
+    if (name != NULL)
+    {
+        length = strlen(name);
+
+        deregistration->name = malloc(length);
+        if (deregistration->name == NULL)
+        {
+            return -1;
+        }
+
+        strcpy((char *)deregistration->name, name);
     }
 
     return 0;
