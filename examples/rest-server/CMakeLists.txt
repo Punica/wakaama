@@ -23,12 +23,14 @@ SET(SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/rest-notifications.c
     ${CMAKE_CURRENT_LIST_DIR}/rest-subscriptions.c
     ${CMAKE_CURRENT_LIST_DIR}/rest-list.c
+    ${CMAKE_CURRENT_LIST_DIR}/rest-utils.c
     )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${WAKAAMA_SOURCES} ${SHARED_SOURCES})
 find_library(ULFIUS_LIB ulfius)
 find_library(JANSSON_LIB jansson)
 find_library(BASE64_LIB b64)
+target_compile_options(restserver PRIVATE "-Wall")
 target_link_libraries(restserver "${ULFIUS_LIB}" "${JANSSON_LIB}" "${BASE64_LIB}")
 
 # Add WITH_LOGS to debug variant

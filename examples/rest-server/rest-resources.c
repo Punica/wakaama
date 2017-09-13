@@ -16,22 +16,6 @@ typedef struct
     rest_async_response_t *response;
 } rest_async_context_t;
 
-int coap_to_http_status(int status)
-{
-    switch (status)
-    {
-    case COAP_204_CHANGED:
-    case COAP_205_CONTENT:
-        return HTTP_200_OK;
-
-    case COAP_404_NOT_FOUND:
-        return HTTP_404_NOT_FOUND;
-
-    default:
-        return -(((status >> 5) & 0x7) * 100 +  (status & 0x1F));
-    }
-}
-
 static int http_to_coap_format(const char *type)
 {
     if (type == NULL)
@@ -53,7 +37,6 @@ static void rest_async_cb(uint16_t clientID, lwm2m_uri_t *uriP, int status, lwm2
                           uint8_t *data, int dataLength, void *context)
 {
     rest_async_context_t *ctx = (rest_async_context_t *)context;
-    const char *payload;
     int err;
 
     fprintf(stdout, "[ASYNC-RESPONSE] id=%s status=%d\n", ctx->response->id, coap_to_http_status(status));
@@ -87,7 +70,7 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
     rest_async_context_t *async_context = NULL;
     lwm2m_media_type_t format;
     uint8_t *payload = NULL;
-    int size, length;
+    int length;
     int res;
 
     /*

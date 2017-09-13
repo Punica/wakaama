@@ -7,6 +7,7 @@
 
 #include "http_codes.h"
 #include "rest-core-types.h"
+#include "rest-utils.h"
 
 
 typedef struct _u_request ulfius_req_t;
