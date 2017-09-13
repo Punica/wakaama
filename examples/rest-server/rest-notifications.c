@@ -2,17 +2,6 @@
 #include "restserver.h"
 
 
-json_t * rest_async_to_json(rest_async_cookie_t *async)
-{
-    json_t *jasync = json_object();
-
-    json_object_set_new(jasync, "id", json_string(async->id));
-    json_object_set_new(jasync, "status", json_integer(async->status));
-    json_object_set_new(jasync, "payload", json_string(async->payload));
-
-    return jasync;
-}
-
 bool valid_callback_url(const char *url)
 {
     // TODO: implement
@@ -101,25 +90,25 @@ int rest_notifications_pull_cb(const ulfius_req_t *req, ulfius_resp_t *resp, voi
 {
     rest_context_t *rest = (rest_context_t *)context;
     json_t *jbody = json_object();
-    rest_async_cookie_t *async;
+    rest_async_response_t *async;
 
-    if (rest->completedResponseList != NULL)
+    if (rest->asyncResponseList != NULL)
     {
         json_t *jasync = json_array();
 
-        REST_LIST_FOREACH(rest->completedResponseList, async)
+        REST_LIST_FOREACH(rest->asyncResponseList, async)
         {
-            json_array_append_new(jasync, rest_async_to_json(async));
+            json_array_append_new(jasync, rest_async_response_to_json(async));
         }
 
         json_object_set_new(jbody, "async-responses", jasync);
 
 
-        while (rest->completedResponseList != NULL)
+        while (rest->asyncResponseList != NULL)
         {
-            async = rest->completedResponseList;
-            rest->completedResponseList = REST_LIST_RM(rest->completedResponseList, async);
-            rest_async_cookie_destroy(rest, async);
+            async = rest->asyncResponseList;
+            rest->asyncResponseList = REST_LIST_RM(rest->asyncResponseList, async);
+            rest_async_response_delete(async);
         }
     }
 

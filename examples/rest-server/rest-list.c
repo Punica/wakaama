@@ -1,13 +1,13 @@
 
-#include <assert.h>
+#include "rest-list.h"
 
-#include "restserver.h"
+#include <assert.h>
+#include <stdlib.h>
+#include <stdbool.h>
 
 
 rest_list_t * rest_list_add(rest_list_t *head, rest_list_t *node)
 {
-    lwm2m_list_t * target;
-
     assert(node->next == NULL);
 
     if (NULL == head)

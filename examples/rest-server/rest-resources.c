@@ -10,116 +10,11 @@
 #include "restserver.h"
 
 
-int rest_getrandom(void *buf, size_t buflen)
+typedef struct
 {
-    FILE *f;
-    size_t len;
-   
-    f = fopen("/dev/urandom", "r");
-    if (f == NULL)
-    {
-        return -1;
-    }
-
-    len = fread(buf, 1, buflen, f);
-    fclose(f);
-    return len;
-}
-
-rest_async_cookie_t * rest_async_cookie_new(void)
-{
-    rest_async_cookie_t *cookie;
-    uint32_t ts;
-    uint16_t r[6];
-
-    cookie = malloc(sizeof(rest_async_cookie_t));
-    if (cookie == NULL)
-    {
-        return NULL;
-    }
-    memset(cookie, 0, sizeof(rest_async_cookie_t));
-
-    ts = time(NULL);
-    if (rest_getrandom(r, sizeof(r)) != sizeof(r))
-    {
-        return NULL;
-    }
-
-    snprintf(cookie->id, sizeof(cookie->id), "%u#%04x%04x-%04x-%04x-%04x-%04x",
-            ts, r[0], r[1], r[2], r[3], r[4], r[5]);
-
-    return cookie;
-}
-
-rest_async_cookie_t * rest_async_cookie_clone(const rest_async_cookie_t * cookie)
-{
-    rest_async_cookie_t *clone;
-
-    clone = rest_async_cookie_new();
-    if (clone == NULL)
-    {
-        return NULL;
-    }
-
-    memcpy(clone->id, cookie->id, sizeof(clone->id));
-
-    // XXX: should the payload be cloned?
-
-    return clone;
-}
-
-void rest_async_cookie_destroy(rest_context_t *rest, rest_async_cookie_t *cookie)
-{
-    if (cookie->payload != NULL)
-    {
-        free((void *)cookie->payload);
-    }
-
-    free(cookie);
-}
-
-const char * base64_encode(const uint8_t *data, size_t length)
-{
-    char *buffer, *out;
-    size_t lenb64 = ((length + 2) / 3) * 4 + 1; // +1 for null-terminator
-    base64_encodestate state;
-
-    buffer = malloc(lenb64);
-    if (buffer == NULL)
-    {
-        return NULL;
-    }
-
-    base64_init_encodestate(&state);
-    out = buffer;
-    out += base64_encode_block(data, length, out, &state);
-    out += base64_encode_blockend(out, &state);
-    out[-1] = '\0'; // replace '\n' with null-terminator
-
-    assert((out - buffer) <= lenb64);
-
-    return buffer;
-}
-
-int rest_async_cookie_set(rest_async_cookie_t *cookie, int status,
-                          const uint8_t *payload, size_t length)
-{
-    if (cookie->payload != NULL)
-    {
-        free((void *)cookie->payload);
-        cookie->payload = NULL;
-    }
-
-    cookie->payload = base64_encode(payload, length);
-    if (cookie->payload == NULL)
-    {
-        return -1;
-    }
-
-    cookie->status = status;
-
-    return 0;
-}
+    rest_context_t *rest;
+    rest_async_response_t *response;
+} rest_async_context_t;
 
 int coap_to_http_status(int status)
 {
@@ -161,14 +56,14 @@ static void rest_async_cb(uint16_t clientID, lwm2m_uri_t *uriP, int status, lwm2
     const char *payload;
     int err;
 
-    fprintf(stdout, "[ASYNC-RESPONSE] id=%s status=%d\n", ctx->cookie->id, coap_to_http_status(status));
+    fprintf(stdout, "[ASYNC-RESPONSE] id=%s status=%d\n", ctx->response->id, coap_to_http_status(status));
 
-    ctx->rest->pendingResponseList = REST_LIST_RM(ctx->rest->pendingResponseList, ctx->cookie);
+    ctx->rest->pendingResponseList = REST_LIST_RM(ctx->rest->pendingResponseList, ctx->response);
 
-    err = rest_async_cookie_set(ctx->cookie, coap_to_http_status(status), data, dataLength);
+    err = rest_async_response_set(ctx->response, coap_to_http_status(status), data, dataLength);
     assert(err == 0);
 
-    ctx->rest->completedResponseList = REST_LIST_ADD(ctx->rest->completedResponseList, ctx->cookie);
+    rest_notify_async_response(ctx->rest, ctx->response);
 
     // Free rest_async_context_t which was allocated in rest_resources_read_cb
     free(context);
@@ -275,7 +170,7 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
      */
     const int err = U_CALLBACK_ERROR;
 
-    /* Create response callback context and async-response cookie */
+    /* Create response callback context and async response */
     async_context = malloc(sizeof(rest_async_context_t));
     if (async_context == NULL)
     {
@@ -283,8 +178,8 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
     }
 
     async_context->rest = rest;
-    async_context->cookie = rest_async_cookie_new();
-    if (async_context->cookie == NULL)
+    async_context->response = rest_async_response_new();
+    if (async_context->response == NULL)
     {
         goto exit;
     }
@@ -359,10 +254,10 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
         assert(false); // if this happens, there's an error in the logic
         break;
     }
-    rest->pendingResponseList = REST_LIST_ADD(rest->pendingResponseList, async_context->cookie);
+    rest->pendingResponseList = REST_LIST_ADD(rest->pendingResponseList, async_context->response);
 
     jresponse = json_object();
-    json_object_set_new(jresponse, "async-response-id", json_string(async_context->cookie->id));
+    json_object_set_new(jresponse, "async-response-id", json_string(async_context->response->id));
     ulfius_set_json_body_response(resp, 202, jresponse);
     json_decref(jresponse);
 
@@ -373,9 +268,9 @@ exit:
     {
         if (async_context != NULL)
         {
-            if (async_context->cookie != NULL)
+            if (async_context->response != NULL)
             {
-                free(async_context->cookie);
+                free(async_context->response);
             }
             free(async_context);
         }

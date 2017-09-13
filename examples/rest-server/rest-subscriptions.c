@@ -4,27 +4,33 @@
 #include "restserver.h"
 
 
+typedef struct
+{
+    rest_context_t *rest;
+    rest_async_response_t *response;
+} rest_observe_context_t;
+
 static void rest_observe_cb(uint16_t clientID, lwm2m_uri_t *uriP, int count, lwm2m_media_type_t format,
                           uint8_t *data, int dataLength, void *context)
 {
-    rest_async_context_t *ctx = (rest_async_context_t *)context;
-    rest_async_cookie_t *cookie;
+    rest_observe_context_t *ctx = (rest_observe_context_t *)context;
+    rest_async_response_t *response;
 
-    fprintf(stdout, "[OBSERVE-RESPONSE] id=%s count=%d data=%p\n", ctx->cookie->id, count, data);
+    fprintf(stdout, "[OBSERVE-RESPONSE] id=%s count=%d data=%p\n", ctx->response->id, count, data);
 
-    cookie = rest_async_cookie_clone(ctx->cookie);
-    if (cookie == NULL)
+    response = rest_async_response_clone(ctx->response);
+    if (response == NULL)
     {
-        fprintf(stdout, "[OBSERVE-RESPONSE] Error! Failed to clone a cookie.\n");
+        fprintf(stdout, "[OBSERVE-RESPONSE] Error! Failed to clone a response.\n");
         return;
     }
 
     // Where data is NULL, the count parameter represents CoAP error code
-    rest_async_cookie_set(cookie, 
+    rest_async_response_set(response,
             (data == NULL) ? coap_to_http_status(count) : HTTP_200_OK,
             data, dataLength);
 
-    rest_add_async_response(ctx->rest, cookie);
+    rest_notify_async_response(ctx->rest, response);
 }
 
 int rest_subscriptions_put_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *context)
@@ -37,7 +43,7 @@ int rest_subscriptions_put_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void
     lwm2m_uri_t uri;
     json_t *jresponse;
     lwm2m_observation_t *targetP;
-    rest_async_context_t *async_context = NULL;
+    rest_observe_context_t *observe_context = NULL;
     int res;
 
     /*
@@ -97,41 +103,41 @@ int rest_subscriptions_put_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void
          && targetP->uri.instanceId == uri.instanceId
          && targetP->uri.resourceId == uri.resourceId)
         {
-            async_context = targetP->userData;
+            observe_context = targetP->userData;
             break;
         }
     }
 
-    if (async_context == NULL)
+    if (observe_context == NULL)
     {
-        /* Create response callback context and async-response cookie */
-        async_context = malloc(sizeof(rest_async_context_t));
-        if (async_context == NULL)
+        /* Create response callback context and async-response */
+        observe_context = malloc(sizeof(rest_observe_context_t));
+        if (observe_context == NULL)
         {
             goto exit;
         }
 
-        async_context->rest = rest;
-        async_context->cookie = rest_async_cookie_new();
-        if (async_context->cookie == NULL)
+        observe_context->rest = rest;
+        observe_context->response = rest_async_response_new();
+        if (observe_context->response == NULL)
         {
             goto exit;
         }
 
         res = lwm2m_observe(
                 rest->lwm2m, client->internalID, &uri,
-                rest_observe_cb, async_context
+                rest_observe_cb, observe_context
         );
         if (res != 0)
         {
             goto exit;
         }
 
-        rest->observeList = REST_LIST_ADD(rest->observeList, async_context->cookie);
+        rest->observeList = REST_LIST_ADD(rest->observeList, observe_context->response);
     }
 
     jresponse = json_object();
-    json_object_set_new(jresponse, "async-response-id", json_string(async_context->cookie->id));
+    json_object_set_new(jresponse, "async-response-id", json_string(observe_context->response->id));
     ulfius_set_json_body_response(resp, 202, jresponse);
     json_decref(jresponse);
 
@@ -140,13 +146,13 @@ int rest_subscriptions_put_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void
 exit:
     if (err == U_CALLBACK_ERROR)
     {
-        if (async_context != NULL)
+        if (observe_context != NULL)
         {
-            if (async_context->cookie != NULL)
+            if (observe_context->response != NULL)
             {
-                free(async_context->cookie);
+                free(observe_context->response);
             }
-            free(async_context);
+            free(observe_context);
         }
     }
 

@@ -17,6 +17,7 @@ include_directories (${WAKAAMA_SOURCES_DIR} ${SHARED_INCLUDE_DIRS})
 SET(SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/restserver.c
     ${CMAKE_CURRENT_LIST_DIR}/rest-core.c
+    ${CMAKE_CURRENT_LIST_DIR}/rest-core-types.c
     ${CMAKE_CURRENT_LIST_DIR}/rest-endpoints.c
     ${CMAKE_CURRENT_LIST_DIR}/rest-resources.c
     ${CMAKE_CURRENT_LIST_DIR}/rest-notifications.c
