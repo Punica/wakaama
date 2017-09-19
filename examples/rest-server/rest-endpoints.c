@@ -45,7 +45,14 @@ static json_t * endpoint_to_json(lwm2m_client_t *client)
 
     json_t *jclient = json_object();
     json_object_set_new(jclient, "name", json_string(client->name));
+
+    if (client->type != NULL)
+    {
+        json_object_set_new(jclient, "type", json_string(client->type));
+    }
+
     json_object_set_new(jclient, "status", json_string("ACTIVE"));
+
     json_object_set_new(jclient, "q", json_boolean(queue));
 
     return jclient;
