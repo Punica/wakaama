@@ -77,6 +77,24 @@ bool validate_callback(json_t *jcallback)
     return true;
 }
 
+int rest_notifications_get_callback_cb(const ulfius_req_t *req, ulfius_resp_t *resp,
+        void *context)
+{
+    rest_context_t *rest = (rest_context_t *)context;
+
+    if (rest->callback == NULL)
+    {
+        ulfius_set_empty_body_response(resp, 404);
+        return U_CALLBACK_CONTINUE;
+    }
+    else
+    {
+        ulfius_set_json_body_response(resp, 200, rest->callback);
+    }
+
+    return U_CALLBACK_CONTINUE;
+}
+
 int rest_notifications_put_callback_cb(const ulfius_req_t *req, ulfius_resp_t *resp,
         void *context)
 {

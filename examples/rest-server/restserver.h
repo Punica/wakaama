@@ -76,6 +76,7 @@ json_t * rest_notifications_json(rest_context_t *rest);
 
 void rest_notifications_clear(rest_context_t *rest);
 
+int rest_notifications_get_callback_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *context);
 int rest_notifications_put_callback_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *context);
 
 int rest_notifications_pull_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *context);
