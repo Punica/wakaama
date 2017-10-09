@@ -25,19 +25,25 @@
 #ifndef REST_LIST_H
 #define REST_LIST_H
 
+#include <pthread.h>
+
+
+typedef struct rest_list_entry_t
+{
+    struct rest_list_entry_t *next;
+    void *data;
+} rest_list_entry_t;
+
 typedef struct
 {
-    void *next;
+    pthread_mutex_t mutex;
+    rest_list_entry_t *head;
 } rest_list_t;
 
-rest_list_t * rest_list_add(rest_list_t *head, rest_list_t *node);
+rest_list_t * rest_list_new(void);
+void rest_list_delete(rest_list_t *list);
 
-rest_list_t * rest_list_remove(rest_list_t *head, rest_list_t *node);
-
-#define REST_LIST_ADD(H, N) (typeof(H))rest_list_add((rest_list_t *)(H), (rest_list_t *)(N))
-
-#define REST_LIST_RM(H, N) (typeof(H))rest_list_remove((rest_list_t *)(H), (rest_list_t *)(N))
-
-#define REST_LIST_FOREACH(H, I) for ((I)=(H); (I) != NULL; (I)=((rest_list_t *)(I))->next)
+void rest_list_add(rest_list_t *list, void *data);
+void rest_list_remove(rest_list_t *list, void *data);
 
 #endif // REST_LIST_H

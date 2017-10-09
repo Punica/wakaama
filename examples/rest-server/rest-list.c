@@ -27,40 +27,72 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 
 
-rest_list_t * rest_list_add(rest_list_t *head, rest_list_t *node)
+rest_list_t * rest_list_new(void)
 {
-    assert(node->next == NULL);
+    rest_list_t *list = malloc(sizeof(rest_list_t));
 
-    if (NULL == head)
+    if (list == NULL)
     {
-        return node;
+        return NULL;
     }
 
-    node->next = head;
-    return node;
+    memset(list, 0, sizeof(rest_list_t));
+
+    pthread_mutex_init(&list->mutex, NULL);
+    list->head = NULL;
+
+    return list;
 }
 
-rest_list_t * rest_list_remove(rest_list_t *head, rest_list_t *node)
+void rest_list_delete(rest_list_t *list);
+
+void rest_list_add(rest_list_t *list, void *data)
 {
-    rest_list_t *target;
+    rest_list_entry_t *entry;
 
-    if (head == node)
-    {
-        target = node->next;
-        node->next = NULL;
-        return target;
-    }
+    pthread_mutex_lock(&list->mutex);
 
-    REST_LIST_FOREACH(head, target)
+    entry = malloc(sizeof(rest_list_entry_t));
+    assert(entry != NULL);
+
+    entry->next = list->head;
+    entry->data = data;
+    list->head = entry;
+
+    pthread_mutex_unlock(&list->mutex);
+}
+
+void rest_list_remove(rest_list_t *list, void *data)
+{
+    pthread_mutex_lock(&list->mutex);
+
+    rest_list_entry_t *entry, *previous;
+
+    for (entry = list->head; entry != NULL; entry = entry->next)
     {
-        if (target->next == node)
+        if (entry->data == data)
         {
-            target->next = node->next;
-            node->next = NULL;
-            return head;
+            if (entry == list->head)
+            {
+                list->head = entry->next;
+                entry->next = NULL;
+                free(entry);
+            }
+            else
+            {
+                previous->next = entry->next;
+                entry->next = NULL;
+                free(entry);
+            }
+
+            pthread_mutex_unlock(&list->mutex);
+            return;
         }
+
+        previous = entry;
     }
 
     assert(false);

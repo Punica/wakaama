@@ -145,27 +145,27 @@ int rest_notifications_pull_cb(const ulfius_req_t *req, ulfius_resp_t *resp, voi
 
 void rest_notify_registration(rest_context_t *rest, rest_notif_registration_t *reg)
 {
-    rest->registrationList = REST_LIST_ADD(rest->registrationList, reg);
+    rest_list_add(rest->registrationList, reg);
 }
 
 void rest_notify_update(rest_context_t *rest, rest_notif_update_t *update)
 {
-    rest->updateList = REST_LIST_ADD(rest->updateList, update);
+    rest_list_add(rest->updateList, update);
 }
 
 void rest_notify_deregistration(rest_context_t *rest, rest_notif_deregistration_t *dereg)
 {
-    rest->deregistrationList = REST_LIST_ADD(rest->deregistrationList, dereg);
+    rest_list_add(rest->deregistrationList, dereg);
 }
 
 void rest_notify_timeout(rest_context_t *rest, rest_notif_timeout_t *timeout)
 {
-    rest->timeoutList = REST_LIST_ADD(rest->timeoutList, timeout);
+    rest_list_add(rest->timeoutList, timeout);
 }
 
 void rest_notify_async_response(rest_context_t *rest, rest_notif_async_response_t *resp)
 {
-    rest->asyncResponseList = REST_LIST_ADD(rest->asyncResponseList, resp);
+    rest_list_add(rest->asyncResponseList, resp);
 }
 
 static json_t * rest_async_response_to_json(rest_async_response_t *async)
@@ -210,6 +210,7 @@ json_t * rest_notifications_json(rest_context_t *rest)
 {
     json_t *jnotifs;
     json_t *jarray;
+    rest_list_entry_t *entry;
     rest_notif_registration_t *reg;
     rest_notif_update_t *upd;
     rest_notif_deregistration_t *dereg;
@@ -220,8 +221,9 @@ json_t * rest_notifications_json(rest_context_t *rest)
     if (rest->registrationList)
     {
         jarray = json_array();
-        REST_LIST_FOREACH(rest->registrationList, reg)
+        for (entry = rest->registrationList->head; entry != NULL; entry = entry->next)
         {
+            reg = entry->data;
             json_array_append(jarray, rest_registration_notification_to_json(reg));
         }
         json_object_set_new(jnotifs, "registrations", jarray);
@@ -230,8 +232,9 @@ json_t * rest_notifications_json(rest_context_t *rest)
     if (rest->updateList)
     {
         jarray = json_array();
-        REST_LIST_FOREACH(rest->updateList, upd)
+        for (entry = rest->updateList->head; entry != NULL; entry = entry->next)
         {
+            upd = entry->data;
             json_array_append(jarray, rest_update_notification_to_json(upd));
         }
         json_object_set_new(jnotifs, "reg-updates", jarray);
@@ -240,8 +243,9 @@ json_t * rest_notifications_json(rest_context_t *rest)
     if (rest->deregistrationList)
     {
         jarray = json_array();
-        REST_LIST_FOREACH(rest->deregistrationList, dereg)
+        for (entry = rest->deregistrationList->head; entry != NULL; entry = entry->next)
         {
+            dereg = entry->data;
             json_array_append(jarray, rest_deregistration_notification_to_json(dereg));
         }
         json_object_set_new(jnotifs, "de-registrations", jarray);
@@ -250,8 +254,9 @@ json_t * rest_notifications_json(rest_context_t *rest)
     if (rest->asyncResponseList)
     {
         jarray = json_array();
-        REST_LIST_FOREACH(rest->asyncResponseList, async)
+        for (entry = rest->asyncResponseList->head; entry != NULL; entry = entry->next)
         {
+            async = entry->data;
             json_array_append(jarray, rest_async_response_to_json(async));
         }
         json_object_set_new(jnotifs, "async-responses", jarray);
@@ -262,31 +267,31 @@ json_t * rest_notifications_json(rest_context_t *rest)
 
 void rest_notifications_clear(rest_context_t *rest)
 {
-    while (rest->registrationList != NULL)
+    while (rest->registrationList->head != NULL)
     {
-        rest_notif_registration_t *reg = rest->registrationList;
-        rest->registrationList = REST_LIST_RM(rest->registrationList, reg);
+        rest_notif_registration_t *reg = rest->registrationList->head->data;
+        rest_list_remove(rest->registrationList, reg);
         rest_notif_registration_delete(reg);
     }
 
-    while (rest->updateList != NULL)
+    while (rest->updateList->head != NULL)
     {
-        rest_notif_update_t *upd = rest->updateList;
-        rest->updateList = REST_LIST_RM(rest->updateList, upd);
+        rest_notif_update_t *upd = rest->updateList->head->data;
+        rest_list_remove(rest->updateList, upd);
         rest_notif_update_delete(upd);
     }
 
-    while (rest->deregistrationList != NULL)
+    while (rest->deregistrationList->head != NULL)
     {
-        rest_notif_deregistration_t *dereg = rest->deregistrationList;
-        rest->deregistrationList = REST_LIST_RM(rest->deregistrationList, dereg);
+        rest_notif_deregistration_t *dereg = rest->deregistrationList->head->data;
+        rest_list_remove(rest->deregistrationList, dereg);
         rest_notif_deregistration_delete(dereg);
     }
 
-    while (rest->asyncResponseList != NULL)
+    while (rest->asyncResponseList->head != NULL)
     {
-        rest_notif_async_response_t *async = rest->asyncResponseList;
-        rest->asyncResponseList = REST_LIST_RM(rest->asyncResponseList, async);
+        rest_notif_async_response_t *async = rest->asyncResponseList->head->data;
+        rest_list_remove(rest->asyncResponseList, async);
         rest_async_response_delete(async);
     }
 }

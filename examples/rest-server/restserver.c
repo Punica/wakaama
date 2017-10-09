@@ -191,7 +191,7 @@ int main(int argc, char *argv[])
     int res;
     rest_context_t rest;
 
-    memset(&rest, 0, sizeof(rest_context_t));
+    rest_init(&rest);
 
     /* Socket section */
     sock = create_socket("5555", AF_INET6);

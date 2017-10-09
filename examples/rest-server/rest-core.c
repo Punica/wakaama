@@ -27,6 +27,19 @@
 #include <string.h>
 
 
+void rest_init(rest_context_t *rest)
+{
+    memset(rest, 0, sizeof(rest_context_t));
+
+    rest->registrationList = rest_list_new();
+    rest->updateList = rest_list_new();
+    rest->deregistrationList = rest_list_new();
+    rest->timeoutList = rest_list_new();
+    rest->asyncResponseList = rest_list_new();
+    rest->pendingResponseList = rest_list_new();
+    rest->observeList = rest_list_new();
+}
+
 int rest_step(rest_context_t *rest, struct timeval *tv)
 {
     ulfius_req_t request;

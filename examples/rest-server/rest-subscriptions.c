@@ -156,7 +156,7 @@ int rest_subscriptions_put_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void
             goto exit;
         }
 
-        rest->observeList = REST_LIST_ADD(rest->observeList, observe_context->response);
+        rest_list_add(rest->observeList, observe_context->response);
     }
 
     jresponse = json_object();

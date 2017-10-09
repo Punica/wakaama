@@ -64,7 +64,7 @@ static void rest_async_cb(uint16_t clientID, lwm2m_uri_t *uriP, int status, lwm2
 
     fprintf(stdout, "[ASYNC-RESPONSE] id=%s status=%d\n", ctx->response->id, coap_to_http_status(status));
 
-    ctx->rest->pendingResponseList = REST_LIST_RM(ctx->rest->pendingResponseList, ctx->response);
+    rest_list_remove(ctx->rest->pendingResponseList, ctx->response);
 
     err = rest_async_response_set(ctx->response, coap_to_http_status(status), data, dataLength);
     assert(err == 0);
@@ -260,7 +260,7 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
         assert(false); // if this happens, there's an error in the logic
         break;
     }
-    rest->pendingResponseList = REST_LIST_ADD(rest->pendingResponseList, async_context->response);
+    rest_list_add(rest->pendingResponseList, async_context->response);
 
     jresponse = json_object();
     json_object_set_new(jresponse, "async-response-id", json_string(async_context->response->id));

@@ -44,17 +44,17 @@ typedef struct
     json_t *callback;
 
     // rest-notifications
-    rest_notif_registration_t   *registrationList;
-    rest_notif_update_t         *updateList;
-    rest_notif_deregistration_t *deregistrationList;
-    rest_notif_timeout_t        *timeoutList;
-    rest_notif_async_response_t *asyncResponseList;
+    rest_list_t *registrationList;
+    rest_list_t *updateList;
+    rest_list_t *deregistrationList;
+    rest_list_t *timeoutList;
+    rest_list_t *asyncResponseList;
 
     // rest-resources
-    rest_async_response_t *pendingResponseList;
+    rest_list_t *pendingResponseList;
 
     // rest-subsciptions
-    rest_async_response_t *observeList;
+    rest_list_t *observeList;
 } rest_context_t;
 
 lwm2m_client_t * rest_endpoints_find_client(lwm2m_client_t *list, const char *name);
@@ -83,6 +83,7 @@ int rest_notifications_pull_cb(const ulfius_req_t *req, ulfius_resp_t *resp, voi
 
 int rest_subscriptions_put_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *context);
 
+void rest_init(rest_context_t *rest);
 int rest_step(rest_context_t *rest, struct timeval *tv);
 
 #endif // RESTSERVER_H
