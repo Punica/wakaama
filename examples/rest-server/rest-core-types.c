@@ -126,6 +126,7 @@ const char * base64_encode(const uint8_t *data, size_t length)
 int rest_async_response_set(rest_async_response_t *response, int status,
                           const uint8_t *payload, size_t length)
 {
+    response->timestamp = lwm2m_getmillis();
     response->status = status;
 
     if (response->payload != NULL)

@@ -172,6 +172,7 @@ static json_t * rest_async_response_to_json(rest_async_response_t *async)
 {
     json_t *jasync = json_object();
 
+    json_object_set_new(jasync, "timestamp", json_integer(async->timestamp));
     json_object_set_new(jasync, "id", json_string(async->id));
     json_object_set_new(jasync, "status", json_integer(async->status));
     json_object_set_new(jasync, "payload", json_string(async->payload));

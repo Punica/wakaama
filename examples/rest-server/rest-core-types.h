@@ -34,6 +34,7 @@
 typedef struct
 {
     rest_list_t list;
+    time_t timestamp;
     char id[40];
     int status;
     const char *payload;
