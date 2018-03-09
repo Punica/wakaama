@@ -172,8 +172,6 @@ void rest_notif_registration_delete(rest_notif_registration_t *registration)
 
 int rest_notif_registration_set(rest_notif_registration_t *registration, const char *name)
 {
-    size_t length;
-
     if (registration->name)
     {
         free((void *)registration->name);
@@ -182,15 +180,11 @@ int rest_notif_registration_set(rest_notif_registration_t *registration, const c
 
     if (name != NULL)
     {
-        length = strlen(name);
-
-        registration->name = malloc(length);
+        registration->name = strdup(name);
         if (registration->name == NULL)
         {
             return -1;
         }
-
-        strcpy((char *)registration->name, name);
     }
 
     return 0;
@@ -224,8 +218,6 @@ void rest_notif_update_delete(rest_notif_update_t *update)
 
 int rest_notif_update_set(rest_notif_update_t *update, const char *name)
 {
-    size_t length;
-
     if (update->name)
     {
         free((void *)update->name);
@@ -234,15 +226,11 @@ int rest_notif_update_set(rest_notif_update_t *update, const char *name)
 
     if (name != NULL)
     {
-        length = strlen(name);
-
-        update->name = malloc(length);
+        update->name = strdup(name);
         if (update->name == NULL)
         {
             return -1;
         }
-
-        strcpy((char *)update->name, name);
     }
 
     return 0;
@@ -276,8 +264,6 @@ void rest_notif_deregistration_delete(rest_notif_deregistration_t *deregistratio
 
 int rest_notif_deregistration_set(rest_notif_deregistration_t *deregistration, const char *name)
 {
-    size_t length;
-
     if (deregistration->name)
     {
         free((void *)deregistration->name);
@@ -286,15 +272,11 @@ int rest_notif_deregistration_set(rest_notif_deregistration_t *deregistration, c
 
     if (name != NULL)
     {
-        length = strlen(name);
-
-        deregistration->name = malloc(length);
+        deregistration->name = strdup(name);
         if (deregistration->name == NULL)
         {
             return -1;
         }
-
-        strcpy((char *)deregistration->name, name);
     }
 
     return 0;
