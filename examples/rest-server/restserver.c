@@ -22,10 +22,12 @@
  * SOFTWARE.
  */
 
+#include <sys/socket.h>
+#include <errno.h>
+#include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/socket.h>
 
 #include <liblwm2m.h>
 #include <ulfius.h>
@@ -33,6 +35,11 @@
 #include "connection.h"
 #include "restserver.h"
 
+static volatile int restserver_quit;
+static void sigint_handler(int signo)
+{
+    restserver_quit = 1;
+}
 
 const char * binding_to_string(lwm2m_binding_t bind)
 {
@@ -191,6 +198,7 @@ int main(int argc, char *argv[])
     int res;
     rest_context_t rest;
 
+    signal(SIGINT, sigint_handler);
     rest_init(&rest);
 
     /* Socket section */
@@ -247,7 +255,7 @@ int main(int argc, char *argv[])
     }
 
     /* Main section */
-    while (1)
+    while (!restserver_quit)
     {
         FD_ZERO(&readfds);
         FD_SET(sock, &readfds);
@@ -270,6 +278,10 @@ int main(int argc, char *argv[])
         res = select(FD_SETSIZE, &readfds, NULL, NULL, &tv);
         if (res < 0)
         {
+            if (errno == EINTR) {
+                continue;
+            }
+
             fprintf(stderr, "select() error: %d\n", res);
         }
 
