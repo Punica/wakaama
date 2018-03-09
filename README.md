@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/GiedriusM/wakaama.svg)](https://travis-ci.org/GiedriusM/wakaama)
+[![Build Status](https://travis-ci.org/8devices/wakaama.svg?branch=master-rest)](https://travis-ci.org/8devices/wakaama)
 
 Wakaama (formerly liblwm2m) is an implementation of the Open Mobile Alliance's LightWeight M2M
 protocol (LWM2M).
