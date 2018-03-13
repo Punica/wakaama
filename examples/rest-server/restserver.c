@@ -294,5 +294,7 @@ int main(int argc, char *argv[])
 
     ulfius_stop_framework(&instance);
     ulfius_clean_instance(&instance);
+
+    return 0;
 }
 
