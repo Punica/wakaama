@@ -1,5 +1,8 @@
 language: c
 
+sudo: required
+dist: trusty
+
 compiler: 
   - gcc
 
@@ -11,5 +14,11 @@ before_install:
 install:
   - ./.travis/install_ulfius.sh
 
+before_script:
+  - if [ "${TRAVIS_OS_NAME}" == "linux" ]; then
+      sudo sh -c 'echo 0 > /proc/sys/net/ipv6/conf/all/disable_ipv6';
+    fi
+
 script:
-  - mkdir build && cd build && cmake ../examples/rest-server && make
+  - ./scripts/build.sh
+  - ./scripts/test.sh

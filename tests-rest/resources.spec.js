@@ -4,11 +4,13 @@ const chai_http = require('chai-http');
 const should = chai.should();
 const events = require('events');
 var server = require('./server-if');
-var client = require('./client-if');
+var ClientInterface = require('./client-if');
 
 chai.use(chai_http);
 
 describe('Resources interface', function () {
+  const client = new ClientInterface();
+
   before(function (done) {
     var self = this;
 
@@ -30,13 +32,14 @@ describe('Resources interface', function () {
         });
     }, 1000);
 
-    client.connect(server.address(), function (err, res) {
+    client.connect(server.address(), (err, res) => {
       done();
     });
   });
 
   after(function () {
     clearInterval(this.interval);
+    client.disconnect();
   });
 
   describe('GET /endpoints/{endpoint-name}/{resource-path}', function () {
@@ -44,7 +47,7 @@ describe('Resources interface', function () {
     it('should return async-response-id and 202 code', function(done) {
       const id_regex = /^\d+#[0-9a-z]{8}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}$/g;
       chai.request(server)
-        .get('/endpoints/'+client.name+'/1/1')
+        .get('/endpoints/'+client.name+'/3/0/0')
         .end(function (err, res) {
           should.not.exist(err);
           res.should.have.status(202);
@@ -70,7 +73,7 @@ describe('Resources interface', function () {
 
     it('should return 410 for non-existing endpoint', function (done) {
       chai.request(server)
-        .get('/endpoints/non-existing-ep/1/1')
+        .get('/endpoints/non-existing-ep/3/0/0')
         .end(function (err, res) {
           res.should.have.status(410);
           done();
@@ -79,10 +82,9 @@ describe('Resources interface', function () {
 
     it('response should return 200 and valid payload', function (done) {
       var self = this;
-      this.timeout(30000);
 
       chai.request(server)
-        .get('/endpoints/'+client.name+'/1/1')
+        .get('/endpoints/'+client.name+'/3/0/0')
         .end(function (err, res) {
           should.not.exist(err);
           res.should.have.status(202);
@@ -91,7 +93,7 @@ describe('Resources interface', function () {
           self.events.on('async-response', resp => {
             if (resp.id == id) {
               resp.status.should.be.eql(200);
-              resp.payload.should.be.eql('Rm9vYmFy'); // 'Foobar' in base64
+              resp.payload.should.be.eql('0AAIOGRldmljZXM='); // '8devices' TLV
               done();
             }
           });
@@ -100,7 +102,6 @@ describe('Resources interface', function () {
 
     it('response should return 404 for invalid resource-path', function (done) {
       var self = this;
-      this.timeout(30000);
 
       chai.request(server)
         .get('/endpoints/'+client.name+'/123/456/789')

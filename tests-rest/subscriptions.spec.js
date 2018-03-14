@@ -4,11 +4,12 @@ const chai_http = require('chai-http');
 const should = chai.should();
 const events = require('events');
 var server = require('./server-if');
-var client = require('./client-if');
+var ClientInterface = require('./client-if');
 
 chai.use(chai_http);
 
 describe('Subscriptions interface', function () {
+  const client = new ClientInterface();
 
   before(function (done) {
     var self = this;
@@ -31,13 +32,14 @@ describe('Subscriptions interface', function () {
         });
     }, 1000);
 
-    client.connect(server.address(), function (err, res) {
+    client.connect(server.address(), (err, res) => {
       done();
     });
   });
 
   after(function () {
     clearInterval(this.interval);
+    client.disconnect();
   });
 
   it('should return async-response-id and 202 code', function(done) {
@@ -112,10 +114,14 @@ describe('Subscriptions interface', function () {
         var count = 0;
         var ts = 0;
         self.events.on('async-response', function (resp) {
+          if (resp.id !== id) {
+            return;
+          }
+
           var dt = new Date().getTime() - ts;
 
           resp.should.have.status(200);
-          dt.should.be.at.least(1000);
+          dt.should.be.at.least(900);
 
           ts = new Date().getTime();
           count++;
@@ -124,6 +130,9 @@ describe('Subscriptions interface', function () {
             done();
           }
         });
+
+        //setTimeout(() => { client.temperature = -5.0; }, 123);
+        setTimeout(() => { client.temperature = 21.0; }, 1234);
       });
   });
 });

@@ -13,5 +13,8 @@
     "chai-http": "^3.0.0",
     "express": "^4.15.4",
     "mocha": "^3.5.0"
+  },
+  "dependencies": {
+    "restserver-api": "git+https://github.com/8devices/restserver-api.git"
   }
 }

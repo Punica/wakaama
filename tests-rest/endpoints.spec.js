@@ -2,16 +2,22 @@ const chai = require('chai');
 const chai_http = require('chai-http');
 const should = chai.should();
 var server = require('./server-if');
-var client = require('./client-if');
+var ClientInterface = require('./client-if');
 
 chai.use(chai_http);
 
 describe('Endpoints interface', () => {
+  const client = new ClientInterface();
+
   before((done) => {
     server.start();
     client.connect(server.address(), (err, res) => {
       done();
     });
+  });
+
+  after(() => {
+    client.disconnect();
   });
 
   it('should list all endpoints on /endpoints', (done) => {
@@ -33,7 +39,7 @@ describe('Endpoints interface', () => {
 
         res.body[0].name.should.be.eql(client.name);
         res.body[0].status.should.be.eql('ACTIVE');
-        res.body[0].q.should.be.eql(true);
+        res.body[0].q.should.be.a('boolean');
         done();
       });
   });
