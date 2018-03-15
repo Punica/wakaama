@@ -2,6 +2,8 @@ cmake_minimum_required (VERSION 2.8)
 
 project (restserver)
 
+option(CODE_COVERAGE "Enable code coverage" OFF)
+
 if(DTLS)
     message(FATAL_ERROR "DTLS option is not supported." )
 endif()
@@ -32,6 +34,11 @@ find_library(JANSSON_LIB jansson)
 find_library(BASE64_LIB b64)
 target_compile_options(restserver PRIVATE "-Wall")
 target_link_libraries(restserver "${ULFIUS_LIB}" "${JANSSON_LIB}" "${BASE64_LIB}")
+
+if(CODE_COVERAGE)
+    target_compile_options(restserver PRIVATE "-coverage")
+    target_link_libraries(restserver "gcov")
+endif()
 
 # Add WITH_LOGS to debug variant
 set_property(TARGET ${PROJECT_NAME} APPEND PROPERTY COMPILE_DEFINITIONS $<$<CONFIG:Debug>:WITH_LOGS>)

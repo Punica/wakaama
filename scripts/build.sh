@@ -1,4 +1,4 @@
 #!/bin/sh
 
-mkdir build && cd build && cmake ../examples/rest-server && make
+mkdir build && cd build && cmake -DCODE_COVERAGE=ON ../examples/rest-server && make
 
