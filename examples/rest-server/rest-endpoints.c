@@ -112,6 +112,8 @@ int rest_endpoints_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *contex
     rest_context_t *rest = (rest_context_t *)context;
     lwm2m_client_t *client;
 
+    rest_lock(rest);
+
     json_t *jclients = json_array();
     for (client = rest->lwm2m->clientList; client != NULL; client = client->next)
     {
@@ -120,7 +122,10 @@ int rest_endpoints_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *contex
 
     ulfius_set_json_body_response(resp, 200, jclients);
     json_decref(jclients);
-    return U_CALLBACK_CONTINUE;
+
+    rest_unlock(rest);
+
+    return U_CALLBACK_COMPLETE;
 }
 
 int rest_endpoints_name_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *context)
@@ -130,16 +135,23 @@ int rest_endpoints_name_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *c
     const char *name = u_map_get(req->map_url, "name");
     json_t *jclient;
 
+    rest_lock(rest);
+
     client = rest_endpoints_find_client(rest->lwm2m->clientList, name);
+
     if (client == NULL)
     {
         ulfius_set_empty_body_response(resp, 404);
-        return U_CALLBACK_COMPLETE;
+    }
+    else
+    {
+        jclient = endpoint_resources_to_json(client);
+        ulfius_set_json_body_response(resp, 200, jclient);
+        json_decref(jclient);
     }
 
-    jclient = endpoint_resources_to_json(client);
-    ulfius_set_json_body_response(resp, 200, jclient);
-    json_decref(jclient);
+    rest_unlock(rest);
+
     return U_CALLBACK_COMPLETE;
 }
 

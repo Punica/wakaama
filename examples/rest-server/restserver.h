@@ -38,6 +38,8 @@ typedef struct _u_response ulfius_resp_t;
 
 typedef struct
 {
+    pthread_mutex_t mutex;
+
     lwm2m_context_t *lwm2m;
 
     // rest-core
@@ -85,6 +87,9 @@ int rest_subscriptions_put_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void
 
 void rest_init(rest_context_t *rest);
 int rest_step(rest_context_t *rest, struct timeval *tv);
+
+void rest_lock(rest_context_t *rest);
+void rest_unlock(rest_context_t *rest);
 
 #endif // RESTSERVER_H
 

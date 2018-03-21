@@ -263,6 +263,7 @@ int main(int argc, char *argv[])
         tv.tv_sec = 5;
         tv.tv_usec = 0;
 
+        rest_lock(&rest);
         res = lwm2m_step(rest.lwm2m, &tv.tv_sec);
         if (res)
         {
@@ -274,6 +275,7 @@ int main(int argc, char *argv[])
         {
             fprintf(stderr, "rest_step() error: %d\n", res);
         }
+        rest_unlock(&rest);
 
         res = select(FD_SETSIZE, &readfds, NULL, NULL, &tv);
         if (res < 0)
@@ -287,7 +289,9 @@ int main(int argc, char *argv[])
 
         if (FD_ISSET(sock, &readfds))
         {
+            rest_lock(&rest);
             socket_receive(rest.lwm2m, sock);
+            rest_unlock(&rest);
         }
 
     }

@@ -24,6 +24,7 @@
 
 #include "restserver.h"
 
+#include <assert.h>
 #include <string.h>
 
 
@@ -38,6 +39,8 @@ void rest_init(rest_context_t *rest)
     rest->asyncResponseList = rest_list_new();
     rest->pendingResponseList = rest_list_new();
     rest->observeList = rest_list_new();
+
+    assert(pthread_mutex_init(&rest->mutex, NULL) == 0);
 }
 
 int rest_step(rest_context_t *rest, struct timeval *tv)
@@ -76,5 +79,15 @@ int rest_step(rest_context_t *rest, struct timeval *tv)
     }
 
     return 0;
+}
+
+void rest_lock(rest_context_t *rest)
+{
+    assert(pthread_mutex_lock(&rest->mutex) == 0);
+}
+
+void rest_unlock(rest_context_t *rest)
+{
+    assert(pthread_mutex_unlock(&rest->mutex) == 0);
 }
 

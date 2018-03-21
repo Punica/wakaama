@@ -82,17 +82,20 @@ int rest_notifications_get_callback_cb(const ulfius_req_t *req, ulfius_resp_t *r
 {
     rest_context_t *rest = (rest_context_t *)context;
 
+    rest_lock(rest);
+
     if (rest->callback == NULL)
     {
         ulfius_set_empty_body_response(resp, 404);
-        return U_CALLBACK_CONTINUE;
     }
     else
     {
         ulfius_set_json_body_response(resp, 200, rest->callback);
     }
 
-    return U_CALLBACK_CONTINUE;
+    rest_unlock(rest);
+
+    return U_CALLBACK_COMPLETE;
 }
 
 int rest_notifications_put_callback_cb(const ulfius_req_t *req, ulfius_resp_t *resp,
@@ -106,17 +109,19 @@ int rest_notifications_put_callback_cb(const ulfius_req_t *req, ulfius_resp_t *r
     if (ct == NULL || strcmp(ct, "application/json") != 0)
     {
         ulfius_set_empty_body_response(resp, 415);
-        return U_CALLBACK_CONTINUE;
+        return U_CALLBACK_COMPLETE;
     }
 
     jcallback = json_loadb(req->binary_body, req->binary_body_length, 0, NULL);
     if (!validate_callback(jcallback))
     {
         ulfius_set_empty_body_response(resp, 400);
-        return U_CALLBACK_CONTINUE;
+        return U_CALLBACK_COMPLETE;
     }
 
     fprintf(stdout, "[SET-CALLBACK] url=%s\n", json_string_value(json_object_get(jcallback, "url")));
+
+    rest_lock(rest);
 
     if (rest->callback != NULL)
     {
@@ -126,12 +131,16 @@ int rest_notifications_put_callback_cb(const ulfius_req_t *req, ulfius_resp_t *r
 
     rest->callback = jcallback;
 
-    return U_CALLBACK_CONTINUE;
+    rest_unlock(rest);
+
+    return U_CALLBACK_COMPLETE;
 }
 
 int rest_notifications_pull_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *context)
 {
     rest_context_t *rest = (rest_context_t *)context;
+
+    rest_lock(rest);
 
     json_t *jbody = rest_notifications_json(rest);
 
@@ -140,7 +149,9 @@ int rest_notifications_pull_cb(const ulfius_req_t *req, ulfius_resp_t *resp, voi
     ulfius_set_json_body_response(resp, 200, jbody);
     json_decref(jbody);
 
-    return U_CALLBACK_CONTINUE;
+    rest_unlock(rest);
+
+    return U_CALLBACK_COMPLETE;
 }
 
 void rest_notify_registration(rest_context_t *rest, rest_notif_registration_t *reg)

@@ -123,7 +123,7 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
     else
     {
         ulfius_set_empty_body_response(resp, 405);
-        return U_CALLBACK_CONTINUE;
+        return U_CALLBACK_COMPLETE;
     }
 
     if ((action == RES_ACTION_WRITE) || (action == RES_ACTION_EXEC))
@@ -132,17 +132,19 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
         if (format == -1)
         {
             ulfius_set_empty_body_response(resp, 415);
-            return U_CALLBACK_CONTINUE;
+            return U_CALLBACK_COMPLETE;
         }
     }
 
     /* Find requested client */
     name = u_map_get(req->map_url, "name");
+    rest_lock(rest);
     client = rest_endpoints_find_client(rest->lwm2m->clientList, name);
+    rest_unlock(rest);
     if (client == NULL)
     {
         ulfius_set_empty_body_response(resp, 410);
-        return U_CALLBACK_CONTINUE;
+        return U_CALLBACK_COMPLETE;
     }
 
     /* Reconstruct and validate client path */
@@ -158,7 +160,7 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
     if (strncmp(path, req->http_url, len) != 0)
     {
         ulfius_set_empty_body_response(resp, 404);
-        return U_CALLBACK_CONTINUE;
+        return U_CALLBACK_COMPLETE;
     }
 
     /* Extract and convert resource path */
@@ -167,7 +169,7 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
     if (lwm2m_stringToUri(path, strlen(path), &uri) == 0)
     {
         ulfius_set_empty_body_response(resp, 404);
-        return U_CALLBACK_CONTINUE;
+        return U_CALLBACK_COMPLETE;
     }
 
     /*
@@ -175,6 +177,15 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
      * go through the cleanup section. See comment above.
      */
     const int err = U_CALLBACK_ERROR;
+
+    rest_lock(rest);
+
+    // Duplicated check just in case client was removed while rest was unlocked
+    client = rest_endpoints_find_client(rest->lwm2m->clientList, name);
+    if (client == NULL)
+    {
+        goto exit;
+    }
 
     /* Create response callback context and async response */
     async_context = malloc(sizeof(rest_async_context_t));
@@ -267,7 +278,9 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
     ulfius_set_json_body_response(resp, 202, jresponse);
     json_decref(jresponse);
 
-    return U_CALLBACK_CONTINUE;
+    rest_unlock(rest);
+
+    return U_CALLBACK_COMPLETE;
 
 exit:
     if (err == U_CALLBACK_ERROR)
@@ -286,6 +299,8 @@ exit:
             free(payload);
         }
     }
+
+    rest_unlock(rest);
 
     return err;
 }
