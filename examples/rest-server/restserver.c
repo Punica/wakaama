@@ -247,6 +247,7 @@ int main(int argc, char *argv[])
 
     // Subscriptions
     ulfius_add_endpoint_by_val(&instance, "PUT", "/subscriptions", ":name/*", 10, &rest_subscriptions_put_cb, &rest);
+    ulfius_add_endpoint_by_val(&instance, "DELETE", "/subscriptions", ":name/*", 10, &rest_subscriptions_delete_cb, &rest);
 
     if (ulfius_start_framework(&instance) != U_OK)
     {
