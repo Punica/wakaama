@@ -86,6 +86,7 @@ int rest_notifications_pull_cb(const ulfius_req_t *req, ulfius_resp_t *resp, voi
 int rest_subscriptions_put_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *context);
 
 void rest_init(rest_context_t *rest);
+void rest_cleanup(rest_context_t *rest);
 int rest_step(rest_context_t *rest, struct timeval *tv);
 
 void rest_lock(rest_context_t *rest);

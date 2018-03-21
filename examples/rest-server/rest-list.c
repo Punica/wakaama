@@ -47,7 +47,26 @@ rest_list_t * rest_list_new(void)
     return list;
 }
 
-void rest_list_delete(rest_list_t *list);
+void rest_list_delete(rest_list_t *list)
+{
+    rest_list_entry_t *entry;
+
+    pthread_mutex_lock(&list->mutex);
+
+    while (list->head != NULL)
+    {
+        entry = list->head;
+        list->head = entry->next;
+        entry->next = NULL;
+        free(entry);
+    }
+
+    pthread_mutex_unlock(&list->mutex);
+
+    pthread_mutex_destroy(&list->mutex);
+
+    free(list);
+}
 
 void rest_list_add(rest_list_t *list, void *data)
 {

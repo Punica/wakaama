@@ -36,6 +36,7 @@
 typedef struct
 {
     rest_context_t *rest;
+    uint8_t *payload;
     rest_async_response_t *response;
 } rest_async_context_t;
 
@@ -72,7 +73,12 @@ static void rest_async_cb(uint16_t clientID, lwm2m_uri_t *uriP, int status, lwm2
     rest_notify_async_response(ctx->rest, ctx->response);
 
     // Free rest_async_context_t which was allocated in rest_resources_read_cb
-    free(context);
+    if (ctx->payload != NULL)
+    {
+        free(ctx->payload);
+    }
+
+    free(ctx);
 }
 
 int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *context)
@@ -92,8 +98,6 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
     json_t *jresponse;
     rest_async_context_t *async_context = NULL;
     lwm2m_media_type_t format;
-    uint8_t *payload = NULL;
-    int length;
     int res;
 
     /*
@@ -195,6 +199,14 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
     }
 
     async_context->rest = rest;
+
+    async_context->payload = malloc(req->binary_body_length);
+    if (async_context->payload == NULL)
+    {
+        goto exit;
+    }
+    memcpy(async_context->payload, req->binary_body, req->binary_body_length);
+
     async_context->response = rest_async_response_new();
     if (async_context->response == NULL)
     {
@@ -216,35 +228,11 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
 
     case RES_ACTION_WRITE:
     case RES_ACTION_EXEC:
-#if 1
-        payload = malloc(req->binary_body_length);
-        if (payload == NULL)
-        {
-            goto exit;
-        }
-        length = req->binary_body_length;
-        memcpy(payload, req->binary_body, length);
-#else
-        // XXX: should content format be converted to TLV?
-        format = LWM2M_CONTENT_JSON;
-        size = lwm2m_data_parse(&uri, req->binary_body, req->binary_body_length, format, &data);
-        if (size < 1 || data == NULL)
-        {
-            goto exit;
-        }
-
-        format = LWM2M_CONTENT_TLV;
-        length = lwm2m_data_serialize(&uri, size, data, &format, &payload);
-        if (length < 1 || payload == NULL || format != LWM2M_CONTENT_TLV)
-        {
-            goto exit;
-        }
-#endif
         if (action == RES_ACTION_WRITE)
         {
             res = lwm2m_dm_write(
                     rest->lwm2m, client->internalID, &uri,
-                    format, payload, length,
+                    format, async_context->payload, req->binary_body_length,
                     rest_async_cb, async_context
             );
         }
@@ -252,7 +240,7 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
         {
             res = lwm2m_dm_execute(
                     rest->lwm2m, client->internalID, &uri,
-                    format, payload, length,
+                    format, async_context->payload, req->binary_body_length,
                     rest_async_cb, async_context
             );
         }
@@ -287,16 +275,17 @@ exit:
     {
         if (async_context != NULL)
         {
+            if (async_context->payload != NULL)
+            {
+                free(async_context->payload);
+            }
+
             if (async_context->response != NULL)
             {
                 free(async_context->response);
             }
-            free(async_context);
-        }
 
-        if (payload != NULL)
-        {
-            free(payload);
+            free(async_context);
         }
     }
 

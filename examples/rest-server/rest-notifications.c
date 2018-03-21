@@ -236,7 +236,7 @@ json_t * rest_notifications_json(rest_context_t *rest)
         for (entry = rest->registrationList->head; entry != NULL; entry = entry->next)
         {
             reg = entry->data;
-            json_array_append(jarray, rest_registration_notification_to_json(reg));
+            json_array_append_new(jarray, rest_registration_notification_to_json(reg));
         }
         json_object_set_new(jnotifs, "registrations", jarray);
     }
@@ -247,7 +247,7 @@ json_t * rest_notifications_json(rest_context_t *rest)
         for (entry = rest->updateList->head; entry != NULL; entry = entry->next)
         {
             upd = entry->data;
-            json_array_append(jarray, rest_update_notification_to_json(upd));
+            json_array_append_new(jarray, rest_update_notification_to_json(upd));
         }
         json_object_set_new(jnotifs, "reg-updates", jarray);
     }
@@ -258,7 +258,7 @@ json_t * rest_notifications_json(rest_context_t *rest)
         for (entry = rest->deregistrationList->head; entry != NULL; entry = entry->next)
         {
             dereg = entry->data;
-            json_array_append(jarray, rest_deregistration_notification_to_json(dereg));
+            json_array_append_new(jarray, rest_deregistration_notification_to_json(dereg));
         }
         json_object_set_new(jnotifs, "de-registrations", jarray);
     }
@@ -269,7 +269,7 @@ json_t * rest_notifications_json(rest_context_t *rest)
         for (entry = rest->asyncResponseList->head; entry != NULL; entry = entry->next)
         {
             async = entry->data;
-            json_array_append(jarray, rest_async_response_to_json(async));
+            json_array_append_new(jarray, rest_async_response_to_json(async));
         }
         json_object_set_new(jnotifs, "async-responses", jarray);
     }
