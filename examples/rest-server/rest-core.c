@@ -52,6 +52,8 @@ void rest_cleanup(rest_context_t *rest)
     rest_list_delete(rest->asyncResponseList);
     rest_list_delete(rest->pendingResponseList);
     rest_list_delete(rest->observeList);
+
+    assert(pthread_mutex_destroy(&rest->mutex) == 0);
 }
 
 int rest_step(rest_context_t *rest, struct timeval *tv)
