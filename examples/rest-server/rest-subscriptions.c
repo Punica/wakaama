@@ -226,11 +226,13 @@ int rest_subscriptions_delete_cb(const ulfius_req_t *req, ulfius_resp_t *resp, v
 
     /* Find requested client */
     name = u_map_get(req->map_url, "name");
+    rest_lock(rest);
     client = rest_endpoints_find_client(rest->lwm2m->clientList, name);
+    rest_unlock(rest);
     if (client == NULL)
     {
         ulfius_set_empty_body_response(resp, 404);
-        return U_CALLBACK_CONTINUE;
+        return U_CALLBACK_COMPLETE;
     }
 
     /* Reconstruct and validate client path */
@@ -246,7 +248,7 @@ int rest_subscriptions_delete_cb(const ulfius_req_t *req, ulfius_resp_t *resp, v
     if (strncmp(path, req->http_url, len) != 0)
     {
         ulfius_set_empty_body_response(resp, 404);
-        return U_CALLBACK_CONTINUE;
+        return U_CALLBACK_COMPLETE;
     }
 
     /* Extract and convert resource path */
@@ -255,7 +257,7 @@ int rest_subscriptions_delete_cb(const ulfius_req_t *req, ulfius_resp_t *resp, v
     if (lwm2m_stringToUri(path, strlen(path), &uri) == 0)
     {
         ulfius_set_empty_body_response(resp, 404);
-        return U_CALLBACK_CONTINUE;
+        return U_CALLBACK_COMPLETE;
     }
 
     /*
@@ -263,6 +265,15 @@ int rest_subscriptions_delete_cb(const ulfius_req_t *req, ulfius_resp_t *resp, v
      * go through the cleanup section. See comment above.
      */
     const int err = U_CALLBACK_ERROR;
+
+    rest_lock(rest);
+
+    // Duplicate check just in case client was removed while rest was unlocked
+    client = rest_endpoints_find_client(rest->lwm2m->clientList, name);
+    if (client == NULL)
+    {
+        goto exit;
+    }
 
     // Search existing registrations to confirm existing observation
     for (targetP = client->observationList; targetP != NULL; targetP = targetP->next)
@@ -279,8 +290,9 @@ int rest_subscriptions_delete_cb(const ulfius_req_t *req, ulfius_resp_t *resp, v
 
     if (observe_context == NULL)
     {
-        ulfius_set_empty_body_response(resp, 404);
-        return U_CALLBACK_CONTINUE;
+        // XXX: This should return 404, but for easier rest lock management go to error
+        //ulfius_set_empty_body_response(resp, 404);
+        goto exit;
     }
 
     // using dummy callback (rest_unobserve_cb), because NULL callback causes segmentation fault
@@ -293,7 +305,7 @@ int rest_subscriptions_delete_cb(const ulfius_req_t *req, ulfius_resp_t *resp, v
     {
         fprintf(stdout, "[WARNING] LwM2M and restserver subscriptions mismatch!");
     } else if (res != 0) {
-        return err;
+        goto exit;
     }
 
     fprintf(stdout, "[UNOBSERVE-RESPONSE] id=%s\n", observe_context->response->id);
@@ -311,6 +323,13 @@ int rest_subscriptions_delete_cb(const ulfius_req_t *req, ulfius_resp_t *resp, v
         free(observe_context);
     }
 
-    return U_CALLBACK_CONTINUE;
+    rest_unlock(rest);
+
+    return U_CALLBACK_COMPLETE;
+
+exit:
+    rest_unlock(rest);
+
+    return err;
 }
 
