@@ -59,7 +59,14 @@ static void rest_observe_cb(uint16_t clientID, lwm2m_uri_t *uriP, int count, lwm
 static void rest_unobserve_cb(uint16_t clientID, lwm2m_uri_t *uriP, int count, lwm2m_media_type_t format,
                           uint8_t *data, int dataLength, void *context)
 {
-   // This callback is dedicated for lwm2m_observe_cancel()
+    rest_observe_context_t *ctx = (rest_observe_context_t *)context;
+
+    fprintf(stdout, "[UNOBSERVE-RESPONSE] id=%s\n", ctx->response->id);
+
+    rest_list_remove(ctx->rest->observeList, ctx->response);
+
+    rest_async_response_delete(ctx->response);
+    free(ctx);
 }
 
 int rest_subscriptions_put_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *context)
@@ -308,20 +315,7 @@ int rest_subscriptions_delete_cb(const ulfius_req_t *req, ulfius_resp_t *resp, v
         goto exit;
     }
 
-    fprintf(stdout, "[UNOBSERVE-RESPONSE] id=%s\n", observe_context->response->id);
-
-    rest_list_remove(rest->observeList, observe_context->response);
-
     ulfius_set_empty_body_response(resp, 204);
-
-    if (observe_context != NULL)
-    {
-        if (observe_context->response != NULL)
-        {
-            free(observe_context->response);
-        }
-        free(observe_context);
-    }
 
     rest_unlock(rest);
 
