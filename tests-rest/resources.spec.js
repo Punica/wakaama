@@ -122,11 +122,171 @@ describe('Resources interface', function () {
   });
 
   describe('PUT /endpoints/{endpoint-name}/{resource}', function () {
-    
+    it('should return async-response-id and 202 code', function(done) {
+      const id_regex = /^\d+#[0-9a-z]{8}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}$/g;
+      chai.request(server)
+        .put('/endpoints/'+client.name+'/1/0/3')
+        .set('Content-Type', 'application/vnd.oma.lwm2m+tlv')
+        .send(Buffer.from([0xC1, 0x03, 0x2A]))
+        .end(function (err, res) {
+          should.not.exist(err);
+          res.should.have.status(202);
+          res.should.have.header('content-type', 'application/json');
+
+          res.body.should.be.a('object');
+          res.body.should.have.property('async-response-id');
+          res.body['async-response-id'].should.be.a('string');
+          res.body['async-response-id'].should.match(id_regex);
+
+          done();
+        });
+    });
+
+    it('should return 404 for invalid resource-path', function (done) {
+      chai.request(server)
+        .put('/endpoints/'+client.name+'/some/invalid/path')
+        .set('Content-Type', 'application/vnd.oma.lwm2m+tlv')
+        .send(Buffer.from([0xC1, 0x03, 0x2A]))
+        .end(function (err, res) {
+          res.should.have.status(404);
+          done();
+        });
+    });
+
+    it('should return 410 for non-existing endpoint', function (done) {
+      chai.request(server)
+        .put('/endpoints/non-existing-ep/1/0/3')
+        .set('Content-Type', 'application/vnd.oma.lwm2m+tlv')
+        .send(Buffer.from([0xC1, 0x03, 0x2A]))
+        .end(function (err, res) {
+          res.should.have.status(410);
+          done();
+        });
+    });
+
+    it('response should return 200 and valid payload', function (done) {
+      var self = this;
+
+      chai.request(server)
+        .put('/endpoints/'+client.name+'/1/0/3')
+        .set('Content-Type', 'application/vnd.oma.lwm2m+tlv')
+        .send(Buffer.from([0xC1, 0x03, 0x2A]))
+        .end(function (err, res) {
+          should.not.exist(err);
+          res.should.have.status(202);
+
+          const id = res.body['async-response-id'];
+          self.events.on('async-response', resp => {
+            if (resp.id == id) {
+              resp.status.should.be.eql(200);
+              resp.payload.should.be.eql('');
+              done();
+            }
+          });
+        });
+    });
+
+    it('response should return 404 for invalid resource-path', function (done) {
+      var self = this;
+
+      chai.request(server)
+        .put('/endpoints/'+client.name+'/123/456/789')
+        .set('Content-Type', 'application/vnd.oma.lwm2m+tlv')
+        .send(Buffer.from([0xC1, 0x03, 0x2A]))
+        .end(function (err, res) {
+          should.not.exist(err);
+          res.should.have.status(202);
+
+          const id = res.body['async-response-id'];
+          self.events.on('async-response', resp => {
+            if (resp.id == id) {
+              resp.status.should.be.eql(404);
+              done();
+            }
+          });
+        });
+    });
   });
 
   describe('POST /endpoints/{endpoint-name}/{resource}', function () {
-    
-  });
+    it('should return async-response-id and 202 code', function(done) {
+      const id_regex = /^\d+#[0-9a-z]{8}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}$/g;
+      chai.request(server)
+        .post('/endpoints/'+client.name+'/1/0/8')
+        .set('Content-Type', 'application/vnd.oma.lwm2m+tlv')
+        .end(function (err, res) {
+          should.not.exist(err);
+          res.should.have.status(202);
+          res.should.have.header('content-type', 'application/json');
 
+          res.body.should.be.a('object');
+          res.body.should.have.property('async-response-id');
+          res.body['async-response-id'].should.be.a('string');
+          res.body['async-response-id'].should.match(id_regex);
+
+          done();
+        });
+    });
+
+    it('should return 404 for invalid resource-path', function (done) {
+      chai.request(server)
+        .post('/endpoints/'+client.name+'/some/invalid/path')
+        .set('Content-Type', 'application/vnd.oma.lwm2m+tlv')
+        .end(function (err, res) {
+          res.should.have.status(404);
+          done();
+        });
+    });
+
+    it('should return 410 for non-existing endpoint', function (done) {
+      chai.request(server)
+        .post('/endpoints/non-existing-ep/1/0/8')
+        .set('Content-Type', 'application/vnd.oma.lwm2m+tlv')
+        .end(function (err, res) {
+          res.should.have.status(410);
+          done();
+        });
+    });
+
+    it('response should return 200 and valid payload', function (done) {
+      var self = this;
+
+      chai.request(server)
+        .post('/endpoints/'+client.name+'/1/0/8')
+        .set('Content-Type', 'application/vnd.oma.lwm2m+tlv')
+        .end(function (err, res) {
+          should.not.exist(err);
+          res.should.have.status(202);
+
+          const id = res.body['async-response-id'];
+          self.events.on('async-response', resp => {
+            if (resp.id == id) {
+              resp.status.should.be.eql(200);
+              resp.payload.should.be.eql('');
+              done();
+            }
+          });
+        });
+    });
+
+    it('response should return 404 for invalid resource-path', function (done) {
+      var self = this;
+
+      chai.request(server)
+        .post('/endpoints/'+client.name+'/123/456/789')
+        .set('Content-Type', 'application/vnd.oma.lwm2m+tlv')
+        .end(function (err, res) {
+          should.not.exist(err);
+          res.should.have.status(202);
+
+          const id = res.body['async-response-id'];
+          self.events.on('async-response', resp => {
+            if (resp.id == id) {
+              resp.status.should.be.eql(404);
+              done();
+            }
+          });
+        });
+    });
+  });
 });
