@@ -41,6 +41,52 @@ static void sigint_handler(int signo)
     restserver_quit = 1;
 }
 
+/**
+ * Function called if we get a SIGPIPE. Does counting.
+ * exmp. killall -13  restserver
+ * @param sig will be SIGPIPE (ignored)
+ */
+static void sigpipe_handler(int sig)
+{
+    static volatile int sigpipe_cnt;
+    sigpipe_cnt++;
+    fprintf(stderr, "SIGPIPE occurs: %d times.\n",sigpipe_cnt);
+}
+
+
+/**
+ * setup handlers to ignore SIGPIPE, handle SIGINT...
+ */
+static void init_signals(void)
+{
+    struct sigaction oldsig;
+    struct sigaction sig;
+
+    //signal(SIGINT, sigint_handler);//automaticaly do SA_RESTART, we must break system functions exmp. select
+    memset(&sig, 0, sizeof(sig));
+    sig.sa_handler = &sigint_handler;
+    sigemptyset(&sig.sa_mask);
+    sig.sa_flags = 0;//break system functions open, read ... if SIGINT occurs
+    if (0 != sigaction(SIGINT, &sig, &oldsig)) {
+        fprintf(stderr, "Failed to install SIGINT handler: %s\n", strerror(errno));
+    }
+
+    //to stop valgrind
+    if (0 != sigaction(SIGTERM, &sig, &oldsig)) {
+        fprintf(stderr, "Failed to install SIGINT handler: %s\n", strerror(errno));
+    }
+
+
+    memset(&sig, 0, sizeof(sig));
+    sig.sa_handler = &sigpipe_handler;
+    sigemptyset(&sig.sa_mask);
+    sig.sa_flags = SA_RESTART;//dont break system functions open, read ... if SIGPIPE occurs SA_INTERRUPT, but select return interrupted
+    if (0 != sigaction(SIGPIPE, &sig, &oldsig)) {
+        fprintf(stderr, "Failed to install SIGPIPE handler: %s\n", strerror(errno));
+    }
+}
+
+
 const char * binding_to_string(lwm2m_binding_t bind)
 {
     switch (bind)
@@ -198,7 +244,10 @@ int main(int argc, char *argv[])
     int res;
     rest_context_t rest;
 
-    signal(SIGINT, sigint_handler);
+
+    init_signals();
+
+
     rest_init(&rest);
 
     /* Socket section */
