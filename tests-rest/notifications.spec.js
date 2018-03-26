@@ -210,5 +210,38 @@ describe('Notifications interface', function () {
             });
         });
     });
+
+    it('should return 200 and object containing registration updates', function(done) {
+      const id_regex = /^\d+#[0-9a-z]{8}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}$/g;
+      chai.request(server)
+      .get('/notification/pull')
+      .end(function (err, res) {
+        should.not.exist(err);
+
+        client.sendUpdate()
+        .then(() => {
+          chai.request(server)
+          .get('/notification/pull')
+          .end(function (err, res) {
+            should.not.exist(err);
+            res.should.have.status(200);
+
+            res.should.have.header('content-type', 'application/json');
+            res.body.should.be.a('object');
+            res.body.should.have.property('reg-updates');
+
+            res.body['reg-updates'].should.be.a('array');
+            res.body['reg-updates'][0].should.be.a('object');
+            res.body['reg-updates'][0]['name'].should.be.a('string');
+            res.body['reg-updates'][0]['name'].should.be.equal(client.name);
+
+            done();
+          });
+        })
+        .catch((err) => {
+          should.not.exist(err);
+        });
+      });
+    });
   });
 });
