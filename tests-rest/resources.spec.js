@@ -206,6 +206,19 @@ describe('Resources interface', function () {
           });
         });
     });
+
+    it('should return 415 for non-existing Content-Type', function (done) {
+      chai.request(server)
+        .put('/endpoints/non-existing-ep/1/0/3')
+        .set('Content-Type', 'application/unexisting-content-type')
+        .send(Buffer.from([0xC1, 0x03, 0x2A]))
+        .end(function (err, res) {
+          should.exist(err);
+          err.should.have.status(415);
+          done();
+        });
+    });
+
   });
 
   describe('POST /endpoints/{endpoint-name}/{resource}', function () {
@@ -286,6 +299,20 @@ describe('Resources interface', function () {
               done();
             }
           });
+        });
+    });
+  });
+
+  describe('DELETE /endpoints/{endpoint-name}/{resource-path}', function () {
+
+    it('should return 405 code', function(done) {
+      chai.request(server)
+        .delete('/endpoints/'+client.name+'/3/0/0')
+        .end(function (err, res) {
+          should.exist(err);
+          err.should.have.status(405);
+
+          done();
         });
     });
   });
