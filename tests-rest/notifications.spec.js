@@ -41,10 +41,7 @@ describe('Notifications interface', function () {
         .send('{"url": "http://localhost:9998/my_callback", "headers": {}}')
         .end(function (err, res) {
           should.not.exist(err);
-          // XXX: Successful subscription status code should be 204, however
-          // it is 200 now
-          // res.should.have.status(204);
-          res.should.have.status(200);
+          res.should.have.status(204);
 
           chai.request(server)
             .get('/notification/callback')
@@ -68,10 +65,7 @@ describe('Notifications interface', function () {
         .send('{"url": "http://localhost:9999/my_callback", "headers": {}}')
         .end(function (err, res) {
           should.not.exist(err);
-          // XXX: Successful subscription status code should be 204, however
-          // it is 200 now
-          // res.should.have.status(204);
-          res.should.have.status(200);
+          res.should.have.status(204);
 
           done();
         });
