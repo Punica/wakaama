@@ -81,9 +81,9 @@ static void rest_async_cb(uint16_t clientID, lwm2m_uri_t *uriP, int status, lwm2
     free(ctx);
 }
 
-int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *context)
+static int rest_resources_rwe_cb_unsafe(rest_context_t *rest,
+        const ulfius_req_t *req, ulfius_resp_t *resp)
 {
-    rest_context_t *rest = (rest_context_t *)context;
     enum {
         RES_ACTION_UNDEFINED,
         RES_ACTION_READ,
@@ -149,9 +149,7 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
 
     /* Find requested client */
     name = u_map_get(req->map_url, "name");
-    rest_lock(rest);
     client = rest_endpoints_find_client(rest->lwm2m->clientList, name);
-    rest_unlock(rest);
     if (client == NULL)
     {
         ulfius_set_empty_body_response(resp, 410);
@@ -188,15 +186,6 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
      * go through the cleanup section. See comment above.
      */
     const int err = U_CALLBACK_ERROR;
-
-    rest_lock(rest);
-
-    // Duplicated check just in case client was removed while rest was unlocked
-    client = rest_endpoints_find_client(rest->lwm2m->clientList, name);
-    if (client == NULL)
-    {
-        goto exit;
-    }
 
     /* Create response callback context and async response */
     async_context = malloc(sizeof(rest_async_context_t));
@@ -273,8 +262,6 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
     ulfius_set_json_body_response(resp, 202, jresponse);
     json_decref(jresponse);
 
-    rest_unlock(rest);
-
     return U_CALLBACK_COMPLETE;
 
 exit:
@@ -296,8 +283,18 @@ exit:
         }
     }
 
+    return err;
+}
+
+int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *context)
+{
+    rest_context_t *rest = (rest_context_t *)context;
+    int ret;
+
+    rest_lock(rest);
+    ret = rest_resources_rwe_cb_unsafe(rest, req, resp);
     rest_unlock(rest);
 
-    return err;
+    return ret;
 }
 
