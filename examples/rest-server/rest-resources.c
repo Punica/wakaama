@@ -140,6 +140,13 @@ int rest_resources_rwe_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *co
         }
     }
 
+    // Return 400 BAD REQUEST if request body length is 0
+    if ((action == RES_ACTION_WRITE) && (req->binary_body_length == 0))
+    {
+        ulfius_set_empty_body_response(resp, 400);
+        return U_CALLBACK_COMPLETE;
+    }
+
     /* Find requested client */
     name = u_map_get(req->map_url, "name");
     rest_lock(rest);
