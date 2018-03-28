@@ -262,13 +262,7 @@ static int rest_subscriptions_delete_cb_unsafe(rest_context_t *rest,
         return U_CALLBACK_COMPLETE;
     }
 
-    /*
-     * IMPORTANT! This is where server-error section starts and any error must
-     * go through the cleanup section. See comment above.
-     */
-    const int err = U_CALLBACK_ERROR;
-
-    // Search existing registrations to confirm existing observation
+    /* Search existing registrations to confirm existing observation */
     for (targetP = client->observationList; targetP != NULL; targetP = targetP->next)
     {
         if (targetP->uri.objectId == uri.objectId
@@ -283,10 +277,15 @@ static int rest_subscriptions_delete_cb_unsafe(rest_context_t *rest,
 
     if (observe_context == NULL)
     {
-        // XXX: This should return 404, but for easier rest lock management go to error
-        //ulfius_set_empty_body_response(resp, 404);
-        goto exit;
+        ulfius_set_empty_body_response(resp, 404);
+        return U_CALLBACK_COMPLETE;
     }
+
+    /*
+     * IMPORTANT! This is where server-error section starts and any error must
+     * go through the cleanup section. See comment above.
+     */
+    const int err = U_CALLBACK_ERROR;
 
     // using dummy callback (rest_unobserve_cb), because NULL callback causes segmentation fault
     res = lwm2m_observe_cancel(

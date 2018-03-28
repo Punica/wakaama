@@ -182,11 +182,7 @@ describe('Subscriptions interface', function () {
       chai.request(server)
         .delete('/subscriptions/' + client.name + '/3303/0/5700')
         .end(function (err, res) {
-          // XXX: Currently server returns 500 Server Error.
-          // Because of difficult code structure 404 implementation
-          // is temporarily unavailable
-          // res.should.have.status(404);
-          res.should.have.status(500);
+          res.should.have.status(404);
           done();
         });
     });
