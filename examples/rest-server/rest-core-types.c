@@ -36,7 +36,7 @@ int rest_getrandom(void *buf, size_t buflen)
 {
     FILE *f;
     size_t len;
-   
+
     f = fopen("/dev/urandom", "r");
     if (f == NULL)
     {
@@ -48,7 +48,7 @@ int rest_getrandom(void *buf, size_t buflen)
     return len;
 }
 
-rest_async_response_t * rest_async_response_new(void)
+rest_async_response_t *rest_async_response_new(void)
 {
     rest_async_response_t *response;
     uint32_t ts;
@@ -68,12 +68,12 @@ rest_async_response_t * rest_async_response_new(void)
     }
 
     snprintf(response->id, sizeof(response->id), "%u#%04x%04x-%04x-%04x-%04x-%04x",
-            ts, r[0], r[1], r[2], r[3], r[4], r[5]);
+             ts, r[0], r[1], r[2], r[3], r[4], r[5]);
 
     return response;
 }
 
-rest_async_response_t * rest_async_response_clone(const rest_async_response_t * response)
+rest_async_response_t *rest_async_response_clone(const rest_async_response_t *response)
 {
     rest_async_response_t *clone;
 
@@ -100,7 +100,7 @@ void rest_async_response_delete(rest_async_response_t *response)
     free(response);
 }
 
-const char * base64_encode(const uint8_t *data, size_t length)
+const char *base64_encode(const uint8_t *data, size_t length)
 {
     char *buffer, *out;
     size_t lenb64 = ((length + 2) / 3) * 4 + 1; // +1 for null-terminator
@@ -124,7 +124,7 @@ const char * base64_encode(const uint8_t *data, size_t length)
 }
 
 int rest_async_response_set(rest_async_response_t *response, int status,
-                          const uint8_t *payload, size_t length)
+                            const uint8_t *payload, size_t length)
 {
     response->timestamp = lwm2m_getmillis();
     response->status = status;
@@ -144,7 +144,7 @@ int rest_async_response_set(rest_async_response_t *response, int status,
     return 0;
 }
 
-rest_notif_registration_t * rest_notif_registration_new(void)
+rest_notif_registration_t *rest_notif_registration_new(void)
 {
     rest_notif_registration_t *registration;
 
@@ -190,7 +190,7 @@ int rest_notif_registration_set(rest_notif_registration_t *registration, const c
     return 0;
 }
 
-rest_notif_update_t * rest_notif_update_new(void)
+rest_notif_update_t *rest_notif_update_new(void)
 {
     rest_notif_update_t *update;
 
@@ -236,7 +236,7 @@ int rest_notif_update_set(rest_notif_update_t *update, const char *name)
     return 0;
 }
 
-rest_notif_deregistration_t * rest_notif_deregistration_new(void)
+rest_notif_deregistration_t *rest_notif_deregistration_new(void)
 {
     rest_notif_deregistration_t *deregistration;
 

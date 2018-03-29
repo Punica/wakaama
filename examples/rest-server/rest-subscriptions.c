@@ -33,8 +33,9 @@ typedef struct
     rest_async_response_t *response;
 } rest_observe_context_t;
 
-static void rest_observe_cb(uint16_t clientID, lwm2m_uri_t *uriP, int count, lwm2m_media_type_t format,
-                          uint8_t *data, int dataLength, void *context)
+static void rest_observe_cb(uint16_t clientID, lwm2m_uri_t *uriP, int count,
+                            lwm2m_media_type_t format, uint8_t *data, int dataLength,
+                            void *context)
 {
     rest_observe_context_t *ctx = (rest_observe_context_t *)context;
     rest_async_response_t *response;
@@ -50,14 +51,15 @@ static void rest_observe_cb(uint16_t clientID, lwm2m_uri_t *uriP, int count, lwm
 
     // Where data is NULL, the count parameter represents CoAP error code
     rest_async_response_set(response,
-            (data == NULL) ? coap_to_http_status(count) : HTTP_200_OK,
-            data, dataLength);
+                            (data == NULL) ? coap_to_http_status(count) : HTTP_200_OK,
+                            data, dataLength);
 
     rest_notify_async_response(ctx->rest, response);
 }
 
-static void rest_unobserve_cb(uint16_t clientID, lwm2m_uri_t *uriP, int count, lwm2m_media_type_t format,
-                          uint8_t *data, int dataLength, void *context)
+static void rest_unobserve_cb(uint16_t clientID, lwm2m_uri_t *uriP, int count,
+                              lwm2m_media_type_t format, uint8_t *data, int dataLength,
+                              void *context)
 {
     rest_observe_context_t *ctx = (rest_observe_context_t *)context;
 
@@ -70,7 +72,8 @@ static void rest_unobserve_cb(uint16_t clientID, lwm2m_uri_t *uriP, int count, l
 }
 
 static int rest_subscriptions_put_cb_unsafe(rest_context_t *rest,
-       const ulfius_req_t *req, ulfius_resp_t *resp)
+                                            const ulfius_req_t *req,
+                                            ulfius_resp_t *resp)
 {
     const char *name;
     lwm2m_client_t *client;
@@ -117,7 +120,7 @@ static int rest_subscriptions_put_cb_unsafe(rest_context_t *rest,
     }
 
     /* Extract and convert resource path */
-    strcpy(path, &req->http_url[len-1]);
+    strcpy(path, &req->http_url[len - 1]);
 
     if (lwm2m_stringToUri(path, strlen(path), &uri) == 0)
     {
@@ -134,10 +137,10 @@ static int rest_subscriptions_put_cb_unsafe(rest_context_t *rest,
     // Search for existing registrations to prevent duplicates
     for (targetP = client->observationList; targetP != NULL; targetP = targetP->next)
     {
-        if (targetP->uri.objectId == uri.objectId
-         && targetP->uri.flag == uri.flag
-         && targetP->uri.instanceId == uri.instanceId
-         && targetP->uri.resourceId == uri.resourceId)
+        if (targetP->uri.flag == uri.flag &&
+            targetP->uri.objectId == uri.objectId &&
+            targetP->uri.instanceId == uri.instanceId &&
+            targetP->uri.resourceId == uri.resourceId)
         {
             observe_context = targetP->userData;
             break;
@@ -161,9 +164,9 @@ static int rest_subscriptions_put_cb_unsafe(rest_context_t *rest,
         }
 
         res = lwm2m_observe(
-                rest->lwm2m, client->internalID, &uri,
-                rest_observe_cb, observe_context
-        );
+                  rest->lwm2m, client->internalID, &uri,
+                  rest_observe_cb, observe_context
+              );
         if (res != 0)
         {
             goto exit;
@@ -208,7 +211,8 @@ int rest_subscriptions_put_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void
 }
 
 static int rest_subscriptions_delete_cb_unsafe(rest_context_t *rest,
-        const ulfius_req_t *req, ulfius_resp_t *resp)
+                                               const ulfius_req_t *req,
+                                               ulfius_resp_t *resp)
 {
     const char *name;
     lwm2m_client_t *client;
@@ -254,7 +258,7 @@ static int rest_subscriptions_delete_cb_unsafe(rest_context_t *rest,
     }
 
     /* Extract and convert resource path */
-    strcpy(path, &req->http_url[len-1]);
+    strcpy(path, &req->http_url[len - 1]);
 
     if (lwm2m_stringToUri(path, strlen(path), &uri) == 0)
     {
@@ -265,10 +269,10 @@ static int rest_subscriptions_delete_cb_unsafe(rest_context_t *rest,
     /* Search existing registrations to confirm existing observation */
     for (targetP = client->observationList; targetP != NULL; targetP = targetP->next)
     {
-        if (targetP->uri.objectId == uri.objectId
-         && targetP->uri.flag == uri.flag
-         && targetP->uri.instanceId == uri.instanceId
-         && targetP->uri.resourceId == uri.resourceId)
+        if (targetP->uri.flag == uri.flag &&
+            targetP->uri.objectId == uri.objectId &&
+            targetP->uri.instanceId == uri.instanceId &&
+            targetP->uri.resourceId == uri.resourceId)
         {
             observe_context = targetP->userData;
             break;
@@ -289,14 +293,16 @@ static int rest_subscriptions_delete_cb_unsafe(rest_context_t *rest,
 
     // using dummy callback (rest_unobserve_cb), because NULL callback causes segmentation fault
     res = lwm2m_observe_cancel(
-            rest->lwm2m, client->internalID, &uri,
-            rest_unobserve_cb, observe_context
-    );
+              rest->lwm2m, client->internalID, &uri,
+              rest_unobserve_cb, observe_context
+          );
 
     if (res == COAP_404_NOT_FOUND)
     {
         fprintf(stdout, "[WARNING] LwM2M and restserver subscriptions mismatch!");
-    } else if (res != 0) {
+    }
+    else if (res != 0)
+    {
         goto exit;
     }
 

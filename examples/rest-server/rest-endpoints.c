@@ -27,7 +27,7 @@
 #include <string.h>
 
 
-static json_t * endpoint_to_json(lwm2m_client_t *client)
+static json_t *endpoint_to_json(lwm2m_client_t *client)
 {
     bool queue;
 
@@ -58,7 +58,7 @@ static json_t * endpoint_to_json(lwm2m_client_t *client)
     return jclient;
 }
 
-static json_t * endpoint_resources_to_json(lwm2m_client_t *client)
+static json_t *endpoint_resources_to_json(lwm2m_client_t *client)
 {
     lwm2m_client_object_t *obj;
     lwm2m_list_t *ins;
@@ -89,12 +89,14 @@ static json_t * endpoint_resources_to_json(lwm2m_client_t *client)
     return jobjects;
 }
 
-lwm2m_client_t * rest_endpoints_find_client(lwm2m_client_t *list, const char *name)
+lwm2m_client_t *rest_endpoints_find_client(lwm2m_client_t *list, const char *name)
 {
     lwm2m_client_t *client;
 
     if (name == NULL)
+    {
         return NULL;
+    }
 
     for (client = list; client != NULL; client = client->next)
     {

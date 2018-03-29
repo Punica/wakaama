@@ -50,7 +50,7 @@ static void sigpipe_handler(int sig)
 {
     static volatile int sigpipe_cnt;
     sigpipe_cnt++;
-    fprintf(stderr, "SIGPIPE occurs: %d times.\n",sigpipe_cnt);
+    fprintf(stderr, "SIGPIPE occurs: %d times.\n", sigpipe_cnt);
 }
 
 
@@ -67,12 +67,14 @@ static void init_signals(void)
     sig.sa_handler = &sigint_handler;
     sigemptyset(&sig.sa_mask);
     sig.sa_flags = 0;//break system functions open, read ... if SIGINT occurs
-    if (0 != sigaction(SIGINT, &sig, &oldsig)) {
+    if (0 != sigaction(SIGINT, &sig, &oldsig))
+    {
         fprintf(stderr, "Failed to install SIGINT handler: %s\n", strerror(errno));
     }
 
     //to stop valgrind
-    if (0 != sigaction(SIGTERM, &sig, &oldsig)) {
+    if (0 != sigaction(SIGTERM, &sig, &oldsig))
+    {
         fprintf(stderr, "Failed to install SIGINT handler: %s\n", strerror(errno));
     }
 
@@ -80,14 +82,15 @@ static void init_signals(void)
     memset(&sig, 0, sizeof(sig));
     sig.sa_handler = &sigpipe_handler;
     sigemptyset(&sig.sa_mask);
-    sig.sa_flags = SA_RESTART;//dont break system functions open, read ... if SIGPIPE occurs SA_INTERRUPT, but select return interrupted
-    if (0 != sigaction(SIGPIPE, &sig, &oldsig)) {
+    sig.sa_flags = SA_RESTART;
+    if (0 != sigaction(SIGPIPE, &sig, &oldsig))
+    {
         fprintf(stderr, "Failed to install SIGPIPE handler: %s\n", strerror(errno));
     }
 }
 
 
-const char * binding_to_string(lwm2m_binding_t bind)
+const char *binding_to_string(lwm2m_binding_t bind)
 {
     switch (bind)
     {
@@ -108,7 +111,9 @@ const char * binding_to_string(lwm2m_binding_t bind)
     }
 }
 
-void client_monitor_cb(uint16_t clientID, lwm2m_uri_t * uriP, int status, lwm2m_media_type_t format, uint8_t * data, int dataLength, void * userData)
+void client_monitor_cb(uint16_t clientID, lwm2m_uri_t *uriP, int status,
+                       lwm2m_media_type_t format, uint8_t *data, int dataLength,
+                       void *userData)
 {
     rest_context_t *rest = (rest_context_t *)userData;
     lwm2m_context_t *lwm2m = rest->lwm2m;
@@ -137,8 +142,8 @@ void client_monitor_cb(uint16_t clientID, lwm2m_uri_t * uriP, int status, lwm2m_
             }
 
             fprintf(stdout, "[MONITOR] Client %d registered.\n", clientID);
-        } 
-        else 
+        }
+        else
         {
             rest_notif_update_t *updateNotif = rest_notif_update_new();
 
@@ -154,7 +159,7 @@ void client_monitor_cb(uint16_t clientID, lwm2m_uri_t * uriP, int status, lwm2m_
 
             fprintf(stdout, "[MONITOR] Client %d updated.\n", clientID);
         }
-        
+
         fprintf(stdout, "\tname: '%s'\n", client->name);
         fprintf(stdout, "\tbind: '%s'\n", binding_to_string(client->binding));
         fprintf(stdout, "\tlifetime: %d\n", client->lifetime);
@@ -265,7 +270,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Failed to create LwM2M server!\n");
         return -1;
     }
-    
+
     lwm2m_set_monitoring_callback(rest.lwm2m, client_monitor_cb, &rest);
 
     /* REST server section */
@@ -283,20 +288,28 @@ int main(int argc, char *argv[])
      */
 
     // Endpoints
-    ulfius_add_endpoint_by_val(&instance, "GET", "/endpoints", NULL, 10, &rest_endpoints_cb, &rest);
-    ulfius_add_endpoint_by_val(&instance, "GET", "/endpoints", ":name", 10, &rest_endpoints_name_cb, &rest);
+    ulfius_add_endpoint_by_val(&instance, "GET", "/endpoints", NULL, 10,
+                               &rest_endpoints_cb, &rest);
+    ulfius_add_endpoint_by_val(&instance, "GET", "/endpoints", ":name", 10,
+                               &rest_endpoints_name_cb, &rest);
 
     // Resources
-    ulfius_add_endpoint_by_val(&instance, "*", "/endpoints", ":name/*", 10, &rest_resources_rwe_cb, &rest);
+    ulfius_add_endpoint_by_val(&instance, "*", "/endpoints", ":name/*", 10,
+                               &rest_resources_rwe_cb, &rest);
 
     // Notifications
-    ulfius_add_endpoint_by_val(&instance, "GET", "/notification/callback", NULL, 10, &rest_notifications_get_callback_cb, &rest);
-    ulfius_add_endpoint_by_val(&instance, "PUT", "/notification/callback", NULL, 10, &rest_notifications_put_callback_cb, &rest);
-    ulfius_add_endpoint_by_val(&instance, "GET", "/notification/pull", NULL, 10, &rest_notifications_pull_cb, &rest);
+    ulfius_add_endpoint_by_val(&instance, "GET", "/notification/callback", NULL, 10,
+                               &rest_notifications_get_callback_cb, &rest);
+    ulfius_add_endpoint_by_val(&instance, "PUT", "/notification/callback", NULL, 10,
+                               &rest_notifications_put_callback_cb, &rest);
+    ulfius_add_endpoint_by_val(&instance, "GET", "/notification/pull", NULL, 10,
+                               &rest_notifications_pull_cb, &rest);
 
     // Subscriptions
-    ulfius_add_endpoint_by_val(&instance, "PUT", "/subscriptions", ":name/*", 10, &rest_subscriptions_put_cb, &rest);
-    ulfius_add_endpoint_by_val(&instance, "DELETE", "/subscriptions", ":name/*", 10, &rest_subscriptions_delete_cb, &rest);
+    ulfius_add_endpoint_by_val(&instance, "PUT", "/subscriptions", ":name/*", 10,
+                               &rest_subscriptions_put_cb, &rest);
+    ulfius_add_endpoint_by_val(&instance, "DELETE", "/subscriptions", ":name/*", 10,
+                               &rest_subscriptions_delete_cb, &rest);
 
     if (ulfius_start_framework(&instance) != U_OK)
     {
@@ -330,7 +343,8 @@ int main(int argc, char *argv[])
         res = select(FD_SETSIZE, &readfds, NULL, NULL, &tv);
         if (res < 0)
         {
-            if (errno == EINTR) {
+            if (errno == EINTR)
+            {
                 continue;
             }
 

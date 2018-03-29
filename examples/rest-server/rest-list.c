@@ -30,7 +30,7 @@
 #include <string.h>
 
 
-rest_list_t * rest_list_new(void)
+rest_list_t *rest_list_new(void)
 {
     rest_list_t *list = malloc(sizeof(rest_list_t));
 

@@ -39,7 +39,7 @@ int coap_to_http_status(int status)
         return HTTP_404_NOT_FOUND;
 
     default:
-        return -(((status >> 5) & 0x7) * 100 +  (status & 0x1F));
+        return -(((status >> 5) & 0x7) * 100 + (status & 0x1F));
     }
 }
 

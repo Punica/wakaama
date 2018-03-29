@@ -78,7 +78,7 @@ bool validate_callback(json_t *jcallback)
 }
 
 int rest_notifications_get_callback_cb(const ulfius_req_t *req, ulfius_resp_t *resp,
-        void *context)
+                                       void *context)
 {
     rest_context_t *rest = (rest_context_t *)context;
 
@@ -99,7 +99,7 @@ int rest_notifications_get_callback_cb(const ulfius_req_t *req, ulfius_resp_t *r
 }
 
 int rest_notifications_put_callback_cb(const ulfius_req_t *req, ulfius_resp_t *resp,
-        void *context)
+                                       void *context)
 {
     rest_context_t *rest = (rest_context_t *)context;
     const char *ct;
@@ -181,7 +181,7 @@ void rest_notify_async_response(rest_context_t *rest, rest_notif_async_response_
     rest_list_add(rest->asyncResponseList, resp);
 }
 
-static json_t * rest_async_response_to_json(rest_async_response_t *async)
+static json_t *rest_async_response_to_json(rest_async_response_t *async)
 {
     json_t *jasync = json_object();
 
@@ -193,7 +193,7 @@ static json_t * rest_async_response_to_json(rest_async_response_t *async)
     return jasync;
 }
 
-static json_t * rest_registration_notification_to_json(rest_notif_registration_t *registration)
+static json_t *rest_registration_notification_to_json(rest_notif_registration_t *registration)
 {
     json_t *jreg = json_object();
 
@@ -202,7 +202,7 @@ static json_t * rest_registration_notification_to_json(rest_notif_registration_t
     return jreg;
 }
 
-static json_t * rest_update_notification_to_json(rest_notif_update_t *update)
+static json_t *rest_update_notification_to_json(rest_notif_update_t *update)
 {
     json_t *jupdate = json_object();
 
@@ -211,7 +211,7 @@ static json_t * rest_update_notification_to_json(rest_notif_update_t *update)
     return jupdate;
 }
 
-static json_t * rest_deregistration_notification_to_json(rest_notif_deregistration_t *deregistration)
+static json_t *rest_deregistration_notification_to_json(rest_notif_deregistration_t *deregistration)
 {
     json_t *jdereg = json_object();
 
@@ -220,7 +220,7 @@ static json_t * rest_deregistration_notification_to_json(rest_notif_deregistrati
     return jdereg;
 }
 
-json_t * rest_notifications_json(rest_context_t *rest)
+json_t *rest_notifications_json(rest_context_t *rest)
 {
     json_t *jnotifs;
     json_t *jarray;

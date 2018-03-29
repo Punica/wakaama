@@ -46,7 +46,7 @@ typedef struct
  * @return Pointer to a new list instance or NULL on error
  *
  */
-rest_list_t * rest_list_new(void);
+rest_list_t *rest_list_new(void);
 
 /**
  * This functions deletes list resource.

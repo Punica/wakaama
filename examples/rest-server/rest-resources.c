@@ -43,27 +43,37 @@ typedef struct
 static int http_to_coap_format(const char *type)
 {
     if (type == NULL)
+    {
         return -1;
+    }
 
     if (strcmp(type, "application/vnd.oma.lwm2m+tlv") == 0)
+    {
         return LWM2M_CONTENT_TLV;
+    }
 
     if (strcmp(type, "application/vnd.oma.lwm2m+json") == 0)
+    {
         return LWM2M_CONTENT_JSON;
+    }
 
     if (strcmp(type, "application/octet-stream") == 0)
+    {
         return LWM2M_CONTENT_OPAQUE;
+    }
 
     return -1;
 }
 
-static void rest_async_cb(uint16_t clientID, lwm2m_uri_t *uriP, int status, lwm2m_media_type_t format,
-                          uint8_t *data, int dataLength, void *context)
+static void rest_async_cb(uint16_t clientID, lwm2m_uri_t *uriP, int status,
+                          lwm2m_media_type_t format, uint8_t *data, int dataLength,
+                          void *context)
 {
     rest_async_context_t *ctx = (rest_async_context_t *)context;
     int err;
 
-    fprintf(stdout, "[ASYNC-RESPONSE] id=%s status=%d\n", ctx->response->id, coap_to_http_status(status));
+    fprintf(stdout, "[ASYNC-RESPONSE] id=%s status=%d\n",
+            ctx->response->id, coap_to_http_status(status));
 
     rest_list_remove(ctx->rest->pendingResponseList, ctx->response);
 
@@ -82,9 +92,10 @@ static void rest_async_cb(uint16_t clientID, lwm2m_uri_t *uriP, int status, lwm2
 }
 
 static int rest_resources_rwe_cb_unsafe(rest_context_t *rest,
-        const ulfius_req_t *req, ulfius_resp_t *resp)
+                                        const ulfius_req_t *req, ulfius_resp_t *resp)
 {
-    enum {
+    enum
+    {
         RES_ACTION_UNDEFINED,
         RES_ACTION_READ,
         RES_ACTION_WRITE,
@@ -173,7 +184,7 @@ static int rest_resources_rwe_cb_unsafe(rest_context_t *rest,
     }
 
     /* Extract and convert resource path */
-    strcpy(path, &req->http_url[len-1]);
+    strcpy(path, &req->http_url[len - 1]);
 
     if (lwm2m_stringToUri(path, strlen(path), &uri) == 0)
     {
@@ -213,9 +224,9 @@ static int rest_resources_rwe_cb_unsafe(rest_context_t *rest,
     {
     case RES_ACTION_READ:
         res = lwm2m_dm_read(
-                rest->lwm2m, client->internalID, &uri,
-                rest_async_cb, async_context
-        );
+                  rest->lwm2m, client->internalID, &uri,
+                  rest_async_cb, async_context
+              );
         if (res != 0)
         {
             goto exit;
@@ -227,18 +238,18 @@ static int rest_resources_rwe_cb_unsafe(rest_context_t *rest,
         if (action == RES_ACTION_WRITE)
         {
             res = lwm2m_dm_write(
-                    rest->lwm2m, client->internalID, &uri,
-                    format, async_context->payload, req->binary_body_length,
-                    rest_async_cb, async_context
-            );
+                      rest->lwm2m, client->internalID, &uri,
+                      format, async_context->payload, req->binary_body_length,
+                      rest_async_cb, async_context
+                  );
         }
         else if (action == RES_ACTION_EXEC)
         {
             res = lwm2m_dm_execute(
-                    rest->lwm2m, client->internalID, &uri,
-                    format, async_context->payload, req->binary_body_length,
-                    rest_async_cb, async_context
-            );
+                      rest->lwm2m, client->internalID, &uri,
+                      format, async_context->payload, req->binary_body_length,
+                      rest_async_cb, async_context
+                  );
         }
         else
         {
