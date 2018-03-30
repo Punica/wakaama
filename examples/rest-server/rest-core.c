@@ -45,6 +45,13 @@ void rest_init(rest_context_t *rest)
 
 void rest_cleanup(rest_context_t *rest)
 {
+    if (rest->callback)
+    {
+        json_decref(rest->callback);
+        rest->callback = NULL;
+    }
+
+    rest_notifications_clear(rest);
     rest_list_delete(rest->registrationList);
     rest_list_delete(rest->updateList);
     rest_list_delete(rest->deregistrationList);

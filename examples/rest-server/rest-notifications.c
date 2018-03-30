@@ -115,6 +115,11 @@ int rest_notifications_put_callback_cb(const ulfius_req_t *req, ulfius_resp_t *r
     jcallback = json_loadb(req->binary_body, req->binary_body_length, 0, NULL);
     if (!validate_callback(jcallback))
     {
+        if (jcallback != NULL)
+        {
+            json_decref(jcallback);
+        }
+
         ulfius_set_empty_body_response(resp, 400);
         return U_CALLBACK_COMPLETE;
     }
