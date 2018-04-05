@@ -30,6 +30,7 @@
 #include <time.h>
 
 #include <b64/cencode.h>
+#include <liblwm2m.h>
 
 
 int rest_getrandom(void *buf, size_t buflen)
