@@ -15,6 +15,6 @@
     "mocha": "^3.5.0"
   },
   "dependencies": {
-    "restserver-api": "git+https://github.com/8devices/restserver-api.git"
+    "restserver-api": "git+https://github.com/8devices/restserver-api.git#08e6a30"
   }
 }
