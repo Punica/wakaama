@@ -30,6 +30,7 @@
 #include <sys/syscall.h>
 #include <linux/random.h>
 
+#include "logging.h"
 #include "restserver.h"
 
 
@@ -72,8 +73,8 @@ static void rest_async_cb(uint16_t clientID, lwm2m_uri_t *uriP, int status,
     rest_async_context_t *ctx = (rest_async_context_t *)context;
     int err;
 
-    fprintf(stdout, "[ASYNC-RESPONSE] id=%s status=%d\n",
-            ctx->response->id, coap_to_http_status(status));
+    log_message(LOG_LEVEL_INFO, "[ASYNC-RESPONSE] id=%s status=%d\n",
+                ctx->response->id, coap_to_http_status(status));
 
     rest_list_remove(ctx->rest->pendingResponseList, ctx->response);
 
@@ -122,17 +123,17 @@ static int rest_resources_rwe_cb_unsafe(rest_context_t *rest,
 
     if (strcmp(req->http_verb, "GET") == 0)
     {
-        fprintf(stdout, "[READ-REQUEST] %s\n", req->http_url);
+        log_message(LOG_LEVEL_INFO, "[READ-REQUEST] %s\n", req->http_url);
         action = RES_ACTION_READ;
     }
     else if (strcmp(req->http_verb, "PUT") == 0)
     {
-        fprintf(stdout, "[WRITE-REQUEST] %s\n", req->http_url);
+        log_message(LOG_LEVEL_INFO, "[WRITE-REQUEST] %s\n", req->http_url);
         action = RES_ACTION_WRITE;
     }
     else if (strcmp(req->http_verb, "POST") == 0)
     {
-        fprintf(stdout, "[EXEC-REQUEST] %s\n", req->http_url);
+        log_message(LOG_LEVEL_INFO, "[EXEC-REQUEST] %s\n", req->http_url);
         action = RES_ACTION_EXEC;
     }
     else
@@ -172,7 +173,7 @@ static int rest_resources_rwe_cb_unsafe(rest_context_t *rest,
 
     if (req->http_url == NULL || strlen(req->http_url) >= sizeof(path) || len >= sizeof(path))
     {
-        fprintf(stderr, "%s(): invalid http request (%s)!\n", __func__, req->http_url);
+        log_message(LOG_LEVEL_WARN, "%s(): invalid http request (%s)!\n", __func__, req->http_url);
         return U_CALLBACK_ERROR;
     }
 

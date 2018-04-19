@@ -26,14 +26,48 @@
 #include <errno.h>
 #include <signal.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <string.h>
+#include <argp.h>
 
 #include <liblwm2m.h>
 #include <ulfius.h>
 
 #include "connection.h"
 #include "restserver.h"
+#include "logging.h"
+
+const char *argp_program_version = "restserver 1.0";
+
+static char doc[] = "Restserver - interface to LwM2M server and all clients connected to it";
+
+static struct argp_option options[] =
+{
+    {"log",   'l', "LOGGING_LEVEL", 0, "Specify logging level (0-5)" },
+    { 0 }
+};
+
+struct arguments
+{
+    logging_level_t logging_level;
+};
+
+static error_t parse_opt(int key, char *arg, struct argp_state *state)
+{
+    struct arguments *arguments = state->input;
+
+    switch (key)
+    {
+    case 'l':
+        arguments->logging_level = atoi(arg);
+        break;
+
+    default:
+        return ARGP_ERR_UNKNOWN;
+    }
+    return 0;
+}
+
+static struct argp argp = { options, parse_opt, 0, doc };
 
 static volatile int restserver_quit;
 static void sigint_handler(int signo)
@@ -50,7 +84,7 @@ static void sigpipe_handler(int sig)
 {
     static volatile int sigpipe_cnt;
     sigpipe_cnt++;
-    fprintf(stderr, "SIGPIPE occurs: %d times.\n", sigpipe_cnt);
+    log_message(LOG_LEVEL_ERROR, "SIGPIPE occurs: %d times.\n", sigpipe_cnt);
 }
 
 
@@ -69,13 +103,13 @@ static void init_signals(void)
     sig.sa_flags = 0;//break system functions open, read ... if SIGINT occurs
     if (0 != sigaction(SIGINT, &sig, &oldsig))
     {
-        fprintf(stderr, "Failed to install SIGINT handler: %s\n", strerror(errno));
+        log_message(LOG_LEVEL_FATAL, "Failed to install SIGINT handler: %s\n", strerror(errno));
     }
 
     //to stop valgrind
     if (0 != sigaction(SIGTERM, &sig, &oldsig))
     {
-        fprintf(stderr, "Failed to install SIGINT handler: %s\n", strerror(errno));
+        log_message(LOG_LEVEL_FATAL, "Failed to install SIGTERM handler: %s\n", strerror(errno));
     }
 
 
@@ -85,7 +119,7 @@ static void init_signals(void)
     sig.sa_flags = SA_RESTART;
     if (0 != sigaction(SIGPIPE, &sig, &oldsig))
     {
-        fprintf(stderr, "Failed to install SIGPIPE handler: %s\n", strerror(errno));
+        log_message(LOG_LEVEL_FATAL, "Failed to install SIGPIPE handler: %s\n", strerror(errno));
     }
 }
 
@@ -138,10 +172,10 @@ void client_monitor_cb(uint16_t clientID, lwm2m_uri_t *uriP, int status,
             }
             else
             {
-                fprintf(stderr, "[MONITOR] Failed to allocate registration notification!\n");
+                log_message(LOG_LEVEL_ERROR, "[MONITOR] Failed to allocate registration notification!\n");
             }
 
-            fprintf(stdout, "[MONITOR] Client %d registered.\n", clientID);
+            log_message(LOG_LEVEL_INFO, "[MONITOR] Client %d registered.\n", clientID);
         }
         else
         {
@@ -154,31 +188,31 @@ void client_monitor_cb(uint16_t clientID, lwm2m_uri_t *uriP, int status,
             }
             else
             {
-                fprintf(stderr, "[MONITOR] Failed to allocate update notification!\n");
+                log_message(LOG_LEVEL_ERROR, "[MONITOR] Failed to allocate update notification!\n");
             }
 
-            fprintf(stdout, "[MONITOR] Client %d updated.\n", clientID);
+            log_message(LOG_LEVEL_INFO, "[MONITOR] Client %d updated.\n", clientID);
         }
 
-        fprintf(stdout, "\tname: '%s'\n", client->name);
-        fprintf(stdout, "\tbind: '%s'\n", binding_to_string(client->binding));
-        fprintf(stdout, "\tlifetime: %d\n", client->lifetime);
-        fprintf(stdout, "\tobjects: ");
+        log_message(LOG_LEVEL_DEBUG, "\tname: '%s'\n", client->name);
+        log_message(LOG_LEVEL_DEBUG, "\tbind: '%s'\n", binding_to_string(client->binding));
+        log_message(LOG_LEVEL_DEBUG, "\tlifetime: %d\n", client->lifetime);
+        log_message(LOG_LEVEL_DEBUG, "\tobjects: ");
         for (obj = client->objectList; obj != NULL; obj = obj->next)
         {
             if (obj->instanceList == NULL)
             {
-                fprintf(stdout, "/%d, ", obj->id);
+                log_message(LOG_LEVEL_DEBUG, "/%d, ", obj->id);
             }
             else
             {
                 for (ins = obj->instanceList; ins != NULL; ins = ins->next)
                 {
-                    fprintf(stdout, "/%d/%d, ", obj->id, ins->id);
+                    log_message(LOG_LEVEL_DEBUG, "/%d/%d, ", obj->id, ins->id);
                 }
             }
         }
-        fprintf(stdout, "\n");
+        log_message(LOG_LEVEL_DEBUG, "\n");
         break;
 
     case COAP_202_DELETED:
@@ -192,14 +226,14 @@ void client_monitor_cb(uint16_t clientID, lwm2m_uri_t *uriP, int status,
         }
         else
         {
-            fprintf(stderr, "[MONITOR] Failed to allocate deregistration notification!\n");
+            log_message(LOG_LEVEL_ERROR, "[MONITOR] Failed to allocate deregistration notification!\n");
         }
 
-        fprintf(stdout, "[MONITOR] Client %d deregistered.\n", clientID);
+        log_message(LOG_LEVEL_INFO, "[MONITOR] Client %d deregistered.\n", clientID);
         break;
     }
     default:
-        fprintf(stdout, "[MONITOR] Client %d status update %d.\n", clientID, status);
+        log_message(LOG_LEVEL_INFO, "[MONITOR] Client %d status update %d.\n", clientID, status);
         break;
     }
 }
@@ -219,7 +253,7 @@ int socket_receive(lwm2m_context_t *lwm2m, int sock)
 
     if (nbytes < 0)
     {
-        fprintf(stderr, "recvfrom() error: %d\n", nbytes);
+        log_message(LOG_LEVEL_FATAL, "recvfrom() error: %d\n", nbytes);
         return -1;
     }
 
@@ -248,10 +282,13 @@ int main(int argc, char *argv[])
     struct timeval tv;
     int res;
     rest_context_t rest;
+    struct arguments arguments;
 
+    arguments.logging_level = LOG_LEVEL_WARN;
+    argp_parse(&argp, argc, argv, 0, 0, &arguments);
+    logging_init(arguments.logging_level);
 
     init_signals();
-
 
     rest_init(&rest);
 
@@ -259,7 +296,7 @@ int main(int argc, char *argv[])
     sock = create_socket("5555", AF_INET6);
     if (sock < 0)
     {
-        fprintf(stderr, "Failed to create socket!\n");
+        log_message(LOG_LEVEL_FATAL, "Failed to create socket!\n");
         return -1;
     }
 
@@ -267,7 +304,7 @@ int main(int argc, char *argv[])
     rest.lwm2m = lwm2m_init(NULL);
     if (rest.lwm2m == NULL)
     {
-        fprintf(stderr, "Failed to create LwM2M server!\n");
+        log_message(LOG_LEVEL_FATAL, "Failed to create LwM2M server!\n");
         return -1;
     }
 
@@ -278,7 +315,7 @@ int main(int argc, char *argv[])
 
     if (ulfius_init_instance(&instance, 8888, NULL, NULL) != U_OK)
     {
-        fprintf(stderr, "Failed to initialize REST server!\n");
+        log_message(LOG_LEVEL_FATAL, "Failed to initialize REST server!\n");
         return -1;
     }
 
@@ -313,7 +350,7 @@ int main(int argc, char *argv[])
 
     if (ulfius_start_framework(&instance) != U_OK)
     {
-        fprintf(stderr, "Failed to start REST server!\n");
+        log_message(LOG_LEVEL_FATAL, "Failed to start REST server!\n");
         return -1;
     }
 
@@ -330,13 +367,13 @@ int main(int argc, char *argv[])
         res = lwm2m_step(rest.lwm2m, &tv.tv_sec);
         if (res)
         {
-            fprintf(stderr, "lwm2m_step() error: %d\n", res);
+            log_message(LOG_LEVEL_ERROR, "lwm2m_step() error: %d\n", res);
         }
 
         res = rest_step(&rest, &tv);
         if (res)
         {
-            fprintf(stderr, "rest_step() error: %d\n", res);
+            log_message(LOG_LEVEL_ERROR, "rest_step() error: %d\n", res);
         }
         rest_unlock(&rest);
 
@@ -348,7 +385,7 @@ int main(int argc, char *argv[])
                 continue;
             }
 
-            fprintf(stderr, "select() error: %d\n", res);
+            log_message(LOG_LEVEL_ERROR, "select() error: %d\n", res);
         }
 
         if (FD_ISSET(sock, &readfds))

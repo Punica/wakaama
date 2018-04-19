@@ -22,11 +22,11 @@
  * SOFTWARE.
  */
 
-#include "restserver.h"
-
 #include <assert.h>
 #include <string.h>
 
+#include "logging.h"
+#include "restserver.h"
 
 void rest_init(rest_context_t *rest)
 {
@@ -74,7 +74,7 @@ int rest_step(rest_context_t *rest, struct timeval *tv)
     {
         const char *url = json_string_value(json_object_get(rest->callback, "url"));
 
-        fprintf(stdout, "[CALLBACK] Sending to %s\n", url);
+        log_message(LOG_LEVEL_INFO, "[CALLBACK] Sending to %s\n", url);
 
         jbody = rest_notifications_json(rest);
 

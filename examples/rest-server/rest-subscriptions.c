@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include "restserver.h"
+#include "logging.h"
 
 
 typedef struct
@@ -40,12 +41,13 @@ static void rest_observe_cb(uint16_t clientID, lwm2m_uri_t *uriP, int count,
     rest_observe_context_t *ctx = (rest_observe_context_t *)context;
     rest_async_response_t *response;
 
-    fprintf(stdout, "[OBSERVE-RESPONSE] id=%s count=%d data=%p\n", ctx->response->id, count, data);
+    log_message(LOG_LEVEL_INFO, "[OBSERVE-RESPONSE] id=%s count=%d data=%p\n",
+                ctx->response->id, count, data);
 
     response = rest_async_response_clone(ctx->response);
     if (response == NULL)
     {
-        fprintf(stdout, "[OBSERVE-RESPONSE] Error! Failed to clone a response.\n");
+        log_message(LOG_LEVEL_ERROR, "[OBSERVE-RESPONSE] Error! Failed to clone a response.\n");
         return;
     }
 
@@ -63,7 +65,7 @@ static void rest_unobserve_cb(uint16_t clientID, lwm2m_uri_t *uriP, int count,
 {
     rest_observe_context_t *ctx = (rest_observe_context_t *)context;
 
-    fprintf(stdout, "[UNOBSERVE-RESPONSE] id=%s\n", ctx->response->id);
+    log_message(LOG_LEVEL_INFO, "[UNOBSERVE-RESPONSE] id=%s\n", ctx->response->id);
 
     rest_list_remove(ctx->rest->observeList, ctx->response);
 
@@ -108,7 +110,7 @@ static int rest_subscriptions_put_cb_unsafe(rest_context_t *rest,
 
     if (req->http_url == NULL || strlen(req->http_url) >= sizeof(path) || len >= sizeof(path))
     {
-        fprintf(stderr, "%s(): invalid http request (%s)!\n", __func__, req->http_url);
+        log_message(LOG_LEVEL_WARN, "%s(): invalid http request (%s)!\n", __func__, req->http_url);
         return U_CALLBACK_ERROR;
     }
 
@@ -246,7 +248,7 @@ static int rest_subscriptions_delete_cb_unsafe(rest_context_t *rest,
 
     if (req->http_url == NULL || strlen(req->http_url) >= sizeof(path) || len >= sizeof(path))
     {
-        fprintf(stderr, "%s(): invalid http request (%s)!\n", __func__, req->http_url);
+        log_message(LOG_LEVEL_WARN, "%s(): invalid http request (%s)!\n", __func__, req->http_url);
         return U_CALLBACK_ERROR;
     }
 
@@ -299,7 +301,7 @@ static int rest_subscriptions_delete_cb_unsafe(rest_context_t *rest,
 
     if (res == COAP_404_NOT_FOUND)
     {
-        fprintf(stdout, "[WARNING] LwM2M and restserver subscriptions mismatch!");
+        log_message(LOG_LEVEL_WARN, "[WARNING] LwM2M and restserver subscriptions mismatch!");
     }
     else if (res != 0)
     {
