@@ -27,47 +27,13 @@
 #include <signal.h>
 #include <stdint.h>
 #include <string.h>
-#include <argp.h>
-
 #include <liblwm2m.h>
 #include <ulfius.h>
 
 #include "connection.h"
 #include "restserver.h"
 #include "logging.h"
-
-const char *argp_program_version = "restserver 1.0";
-
-static char doc[] = "Restserver - interface to LwM2M server and all clients connected to it";
-
-static struct argp_option options[] =
-{
-    {"log",   'l', "LOGGING_LEVEL", 0, "Specify logging level (0-5)" },
-    { 0 }
-};
-
-struct arguments
-{
-    logging_level_t logging_level;
-};
-
-static error_t parse_opt(int key, char *arg, struct argp_state *state)
-{
-    struct arguments *arguments = state->input;
-
-    switch (key)
-    {
-    case 'l':
-        arguments->logging_level = atoi(arg);
-        break;
-
-    default:
-        return ARGP_ERR_UNKNOWN;
-    }
-    return 0;
-}
-
-static struct argp argp = { options, parse_opt, 0, doc };
+#include "settings.h"
 
 static volatile int restserver_quit;
 static void sigint_handler(int signo)
@@ -282,18 +248,36 @@ int main(int argc, char *argv[])
     struct timeval tv;
     int res;
     rest_context_t rest;
-    struct arguments arguments;
+    char coap_port[6];
 
-    arguments.logging_level = LOG_LEVEL_WARN;
-    argp_parse(&argp, argc, argv, 0, 0, &arguments);
-    logging_init(arguments.logging_level);
+    static settings_t settings =
+    {
+        {
+            8888, /* settings.http.port */
+        },
+        {
+            5555, /* settings.coap.port */
+        },
+        {
+            LOG_LEVEL_WARN, /* settings.logging.level */
+        },
+    };
+
+    if (settings_init(argc, argv, &settings) != 0)
+    {
+        return -1;
+    }
+
+    logging_init(settings.logging.level);
 
     init_signals();
 
     rest_init(&rest);
 
     /* Socket section */
-    sock = create_socket("5555", AF_INET6);
+    snprintf(coap_port, sizeof(coap_port), "%d", settings.coap.port);
+    log_message(LOG_LEVEL_INFO, "Creating coap socket on port %s\n", coap_port);
+    sock = create_socket(coap_port, AF_INET6);
     if (sock < 0)
     {
         log_message(LOG_LEVEL_FATAL, "Failed to create socket!\n");
@@ -313,7 +297,8 @@ int main(int argc, char *argv[])
     /* REST server section */
     struct _u_instance instance;
 
-    if (ulfius_init_instance(&instance, 8888, NULL, NULL) != U_OK)
+    log_message(LOG_LEVEL_INFO, "Creating http socket on port %u\n", settings.http.port);
+    if (ulfius_init_instance(&instance, settings.http.port, NULL, NULL) != U_OK)
     {
         log_message(LOG_LEVEL_FATAL, "Failed to initialize REST server!\n");
         return -1;

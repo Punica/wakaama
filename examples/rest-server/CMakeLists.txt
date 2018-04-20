@@ -27,6 +27,7 @@ SET(SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/rest-list.c
     ${CMAKE_CURRENT_LIST_DIR}/rest-utils.c
     ${CMAKE_CURRENT_LIST_DIR}/logging.c
+    ${CMAKE_CURRENT_LIST_DIR}/settings.c
     )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${WAKAAMA_SOURCES} ${SHARED_SOURCES})
