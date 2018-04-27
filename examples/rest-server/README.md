@@ -1,330 +1,96 @@
-**Overview**
+**Introduction**
 ----
-  This REST API provides easy to use interface to the LwM2M server and all LwM2M clients (devices) that are connected to it. One of the major issues with LwM2M is that clients may be often be unreachable (e.g. sleepy devices) and it's not possible to perform a direct transaction immediately. For this reason even channel model is used and all REST requests, that result in a (remote) transaction with a LwM2M client, return an asynchronous transaction id. Such calls are marked with **[async]** tag.
+  REST API contains easy to use interface to the LwM2M server and client communication.
   
-  Once such transaction is completed (or fails), an asynchronous response message is put into the event channel. The event channel should be regulary polled to retrieve the queued events. If polling is undesired, or better time response is needed, the application can register an event callback address - in such case this REST service will send events immediately and directly to the registered address.
-  
-  Along with asynchronous responses, other events are also put into the event channel. These include registration, update and deregistration notifications. Event channel structure details can be found below, in the **Poll events** API call description.
-  
-  The REST API is similar to [MBED Device Connector API documentation](https://docs.mbed.com/docs/mbed-device-connector-web-interfaces/en/latest/api-reference/) and many functions should be compatible, however some differences are to be expected.
+  Detailed [REST API documentation](./RESTAPI.md).
 
-**License**
+**Building**
 ----
-The code in this directory is licensed under the MIT license, however please note that the application uses other libraries (including wakaama) that come under different licenses.
+1. Install tools and libraries required for project building for Debian based distributions (Debian, Ubuntu):
+```
+$ sudo apt-get install -y git cmake build-essential
+$ sudo apt-get install -y libmicrohttpd-dev libjansson-dev libcurl4-gnutls-dev libb64-dev
+```
+2. Install required libraries from Github:
+```
+$ git clone https://github.com/babelouest/ulfius.git
+$ cd ulfius/
+$ git submodule update --init
+$ cd lib/orcania
+$ make && sudo make install
+$ cd ../yder
+$ make && sudo make install
+$ cd ../..
+$ make
+$ sudo make install
+```
+3. Build LwM2M-REST server
+```
+$ git clone https://github.com/8devices/wakaama.git
+$ cd wakaama/
+$ mkdir build
+$ cd build/
+$ cmake ../examples/rest-server
+$ make
+```
+After third step you should have binary file called `restserver` in your `wakaama/build/` directory.
 
-**List connected devices**
+**Usage**
 ----
-  Returns a list of devices, that are currently registered to the LwM2M service. Each device entry has a unique identifier (`name`), LwM2M queue mode status (`q`) and, if provided during device registration, a device type. It also has a status field, which must always be `ACTIVE`. If queue mode is enabled (`"q": true`) it means that the device is not accessible immeadiately and asynchronous requests (see below) will take longer to complete.
-
-* **URL**
-
-  /endpoints
-
-* **Method:**
-  
-  `GET`
-
-* **Success Response:**
-
-  * **Code:** 200 <br />
-    **Content:** `[{"name":"eui64-1d002a00-76656438","type":"8dev_3800","status":"ACTIVE","q":true},{"name":"eui64-19003c00-76656438","type":"8dev_4400","status":"ACTIVE","q":true}]`
-
-* **Sample Call:**
-
-  ```shell
-  $ curl -X GET http://localhost:8888/endpoints
-  ```
-  
-  
-**List device objects**
-----
-  Returns a list of available object instances on the device. Each entry contains a path (`uri`) to a specific
-  object instance available on the device. This list is provided by the device during registration to the LwM2M service.
-
-* **URL**
-
-  /endpoints/:name
-
-* **Method:**
-
-  `GET`
-
-* **Success Response:**
-
-  * **Code:** 200 <br />
-    **Content:** `[{"uri":"/1/0"},{"uri":"/3/0"},{"uri":"/3200/0"},{"uri":"/3303/0"}]`
- 
-* **Error Response:**
-
-  * **Code:** 404 NOT FOUND - endpoint with a provided name is not registered, has deregistered or timed-out<br />
-
-* **Sample Call:**
-
-  ```shell
-  $ curl -X GET http://localhost:8888/endpoints/eui64-19003c00-76656438
-  ```
-  
-**Read device resource(s) [async]**
-----
-  Schedules an asynchronous transaction to read a resource or object instance from the device.
-  Returns transaction id (`async-response-id`), which will be used in the event channel (see below)
-  to indicate a finished transaction.
-  The path must be a valid LwM2M path to a resource (`/object_id/instance_id/resource_id`)
-  or an object instance (`/object_id/instance_id`).
-
-* **URL**
-
-  /endpoints/:name/:path
-
-* **Method:**
-
-  `GET`
-
-* **Success Response:**
-
-  * **Code:** 202 <br />
-    **Content:** `{"async-response-id":"1515412658#16ebc05b-2ad6-d805-3e01-50b8"}`
- 
-* **Error Response:**
-
-  * **Code:** 404 NOT FOUND - the given path is invalid or does not exist <br />
-
-  OR
-
-  * **Code:** 410 GONE - the given endpoint does not exist <br />
-
-* **Sample Call:**
-
-  ```shell
-  $ curl -X GET http://localhost:8888/endpoints/eui64-19003c00-76656438/3/0/2
-  ```
-  
-  ```shell
-  $ curl -X GET http://localhost:8888/endpoints/eui64-19003c00-76656438/3200/0
-  ```
-
-**Write device resource(s) [async]**
-----
-  Schedules an asynchronous transaction to write a resource or object instance to the device.
-  Returns transaction id (`async-response-id`), which will be used in the event channel (see below)
-  to indicate a finished transaction.
-  The path must be a valid LwM2M path to a resource (`/object_id/instance_id/resource_id`)
-  or an object instance (`/object_id/instance_id`).
-
-* **URL**
-
-  /endpoints/:name/:path
-
-* **Method:**
-
-  `PUT`
-  
-* **Data Params**
-
-  Data must be encoded in LwM2M TLV format (see LwM2M specification) and the `Content-Type: application/vnd.oma.lwm2m+tlv` header must be set.
-
-* **Success Response:**
-
-  * **Code:** 202 <br />
-    **Content:** `{"async-response-id":"1515415535#f5bf1bb1-eddd-ac3d-a633-2af4"}`
- 
-* **Error Response:**
-
-  * **Code:** 404 NOT FOUND - the given path is invalid or does not exist <br />
-
-  OR
-
-  * **Code:** 410 GONE - the given endpoint does not exist <br />
-  
-  OR
-  
-  * **Code:** 410 UNSUPPORTED MEDIA TYPE - invalid data encoding format <br />
-
-* **Sample Call:**
-
-  ```shell
-  $ echo -ne '\xC1\x03\x20' | curl http://localhost:8888/endpoints/eui64-19003c00-76656438/1/0/3 -X PUT -H "Content-Type: application/vnd.oma.lwm2m+tlv" --data-binary @-
-  ```
-
-**Execute device resource [async]**
-----
-  Schedules an asynchronous transaction to execute a resource on the device.
-  Returns transaction id (`async-response-id`), which will be used in the event channel (see below)
-  to indicate a finished transaction.
-  The path must be a valid LwM2M path to a resource (`/object_id/instance_id/resource_id`).
-
-* **URL**
-
-  /endpoints/:name/:path
-
-* **Method:**
-
-  `POST`
-  
-* **Data Params**
-
-  Data must be encoded in LwM2M opaque format (see LwM2M specification) and the `Content-Type: application/octet-stream` header must be set.
-
-* **Success Response:**
-
-  * **Code:** 202 <br />
-    **Content:** `{"async-response-id":"1515415535#f5bf1bb1-eddd-ac3d-a633-2af4"}`
- 
-* **Error Response:**
-
-  * **Code:** 404 NOT FOUND - the given path is invalid or does not exist <br />
-
-  OR
-
-  * **Code:** 410 GONE - the given endpoint does not exist <br />
-  
-  OR
-  
-  * **Code:** 410 UNSUPPORTED MEDIA TYPE - invalid data encoding format <br />
-
-* **Sample Call:**
-
-  ```shell
-  $ curl http://localhost:8888/endpoints/eui64-19003c00-76656438/3/0/4 -X POST -H "Content-Type: application/octet-stream" --data-binary "Execute parameters"
-  ```
-
-**Observe device resource [async]**
-----
-  Schedules an asynchronous transaction to observe a resource from the device. Observed resource will send
-  notifications whenever it's value changes or maximum observation period passes since last notification.
-  
-  Returns transaction id (`async-response-id`), which will be used in the event channel (see below)
-  to indicate observation events.
-  The path must be a valid LwM2M path to a resource (`/object_id/instance_id/resource_id`).
-
-* **URL**
-
-  /subscriptions/:name/:path
-
-* **Method:**
-
-  `PUT`
-
-* **Success Response:**
-
-  * **Code:** 202 <br />
-    **Content:** `{"async-response-id":"1515412658#16ebc05b-2ad6-d805-3e01-50b8"}`
- 
-* **Error Response:**
-
-  * **Code:** 404 NOT FOUND - the given endpoint name or path is invalid or does not exist <br />
-
-* **Sample Call:**
-
-  ```shell
-  $ curl http://localhost:8888/subscriptions/eui64-19003c00-76656438/3200/0/5500 -X PUT
-  ```
-
-**Poll events**
-----
-  Returns all pending events and clears them from the event channel.
-  Events are grouped into four types - [re-]registration (`registrations`), update (`reg-updates`), deregistrations (`de-registrations`) and
-  asynchronous responses (`async-responses`).
-  
-  Registration, update and deregistration events contain an id (`name`) of the device which performed the corresponding event.
-  Asyncronous response events are created when a response to a previously created asyncronous transaction is received from the device
-  or an error happens, e.g. a transaction timeout. Asynchronous responses have an ID (given during async transaction creation),
-  status code (`code`) and a base64 encoded payload.
-
-* **URL**
-
-  /notification/pull
-
-* **Method:**
-
-  `GET`
-
-* **Success Response:**
-
-  * **Code:** 200 <br />
-    **Content:** 
-    ```json
+You can get some details about `restserver` by using `--help` or `-?` argument:
+```
+wakaama/build $ ./restserver --usage
+Usage: restserver [OPTION...]
+Restserver - interface to LwM2M server and all clients connected to it
+
+  -c, --config=FILE          Specify parameters configuration file
+  -l, --log=LOGGING_LEVEL    Specify logging level (0-5)
+  -?, --help                 Give this help list
+      --usage                Give a short usage message
+  -V, --version              Print program version
+
+Mandatory or optional arguments to long options are also mandatory or optional
+for any corresponding short options.
+```
+
+You can get some details about `restserver` usage by using `--usage` argument:
+```
+wakaama/build $ ./restserver --usage
+Usage: restserver [-?V] [-c FILE] [-l LOGGING_LEVEL] [--config=FILE]
+            [--log=LOGGING_LEVEL] [--help] [--usage] [--version]
+```
+
+**Arguments list:**
+- `-c CONFIG_FILE` and `--config CONFIG_FILE` is used to load config file.
+
+     Example of configuration file:
+     
+```
     {
-      "registrations": [
-        {"name": "eui64-1d002a00-76656438"}
-      ],
-      "reg-updates": [
-        {"name": "eui64-1d002a00-76656438"},
-        {"name": "eui64-19003c00-76656438"}
-      ],
-      "de-registrations": [
-        {"name": "eui64-19003c00-76656438"}
-      ],
-      "async-responses": [
-        {"id": "1515491879#bbd48aef-3211-a4b2-92e8-1f92", "status": 200, "payload": "wAI="}
-      ]
+      "http": {
+        "port": 8888,
+      },
+      "coap": {
+        "port": 5555,
+      },
+      "logging": {
+        "level": 5
+      }
     }
-    ```
+```
+    
+- `-l LOGGING_LEVEL` and `--log LOGGING_LEVEL` specify logging level from 0 to 5:
 
-* **Sample Call:**
-
-  ```shell
-  curl http://localhost:8888/notification/pull
-  ```
-
-**Register callback**
-----
-  Registers a callback URL and parameters which will be used to send events as they are created on the event channel.
-
-* **URL**
-
-  /notification/callback
-
-* **Method:**
-  
-  `PUT`
-  
-* **Data Params**
-
-  Data must be a JSON object with `url` string of the callback address and `headers` object with optional key/value pairs
-  that should be included in the callback request.
-
-* **Success Response:**
-
-  * **Code:** 204 <br />
- 
-* **Error Response:**
-
-  * **Code:** 400 BAD REQUEST - invalid JSON object format<br />
-
-  OR
-
-  * **Code:** 415 UNSUPPORTED MEDIA TYPE - content type header is not "application/json" <br />
-
-* **Sample Call:**
-
-  ```shell
-  $ curl http://localhost:8888/notification/callback -X PUT -H "Content-Type: application/json" --data '{"url": "http://localhost:9999/my_callback", "headers": {}}'
-  ```
-
-**Check notification callback**
-----
-  Retrieves currently registered callback url and headers.
-
-* **URL**
-
-  /notification/callback
-
-* **Method:**
-  
-  `GET`
-
-* **Success Response:**
-
-  * **Code:** 200 <br />
-    **Content:** `{"url":"http://localhost:9999/my_callback","headers":{}}`
- 
-* **Error Response:**
-
-  * **Code:** 404 NOT FOUND - no callback is registered <br />
-
-* **Sample Call:**
-
-  ```shell
-  $ curl http://localhost:8888/notification/callback
-  ```
+    `0: FATAL` - only very important messages are printed to console (usually the ones that inform about program malfunction).
+    
+    `1: ERROR` - important messages are printed to console (usually the ones that inform about service malfunction).
+    
+    `2: WARN` - warnings about possible malfunctions are reported.
+    
+    `3: INFO` - information about service actions (e.g., registration of new clients).
+    
+    `4: DEBUG` - more detailed information about service actions (e.g., detailed information about new clients).
+    
+    `5: TRACE` - very detailed information about program actions, including code tracing.
+    
+- `-V` and `--version` - print program version.
