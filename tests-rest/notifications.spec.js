@@ -1,11 +1,21 @@
-
 const chai = require('chai');
 const chai_http = require('chai-http');
-const should = chai.should();
+const express = require('express');
+const parser = require('body-parser');
 const server = require('./server-if');
 const ClientInterface = require('./client-if');
 
+const should = chai.should();
 chai.use(chai_http);
+
+const express_server = express();
+
+express_server.use(parser.json());
+express_server.listen(9999);
+
+express_server.put('/test_callback', (req, resp) => {
+  resp.send();
+});
 
 describe('Notifications interface', function () {
   const client = new ClientInterface();
@@ -34,11 +44,11 @@ describe('Notifications interface', function () {
         });
     });
 
-    it('should return 200 (url found)', function(done) {
+    it('should return 200 and registered callback object', function(done) {
       chai.request(server)
         .put('/notification/callback')
         .set('Content-Type', 'application/json')
-        .send('{"url": "http://localhost:9998/my_callback", "headers": {}}')
+        .send('{"url": "http://localhost:9999/test_callback", "headers": {}}')
         .end(function (err, res) {
           should.not.exist(err);
           res.should.have.status(204);
@@ -48,6 +58,11 @@ describe('Notifications interface', function () {
             .end(function (err, res) {
               should.not.exist(err);
               res.body.should.be.a('object');
+
+              res.body.should.deep.equal(
+                {url: "http://localhost:9999/test_callback", headers: {}}
+              );
+
               res.should.have.status(200);
 
               done();
@@ -62,10 +77,44 @@ describe('Notifications interface', function () {
       chai.request(server)
         .put('/notification/callback')
         .set('Content-Type', 'application/json')
-        .send('{"url": "http://localhost:9999/my_callback", "headers": {}}')
+        .send('{"url": "http://localhost:9999/test_callback", "headers": {"Test-Header": "42"}}')
         .end(function (err, res) {
           should.not.exist(err);
           res.should.have.status(204);
+
+          done();
+        });
+    });
+
+    it('should return callback with additional headers and object', function(done) {
+      express_server.put('/test_callback_headers', (req, resp) => {
+        req.should.have.header('Content-Type', 'application/json');
+        req.should.have.header('Test-Header', '42');
+
+        req.body.should.be.a('object');
+
+        resp.send();
+
+        done();
+      });
+
+      chai.request(server)
+        .put('/notification/callback')
+        .set('Content-Type', 'application/json')
+        .send('{"url": "http://localhost:9999/test_callback_headers", "headers": {"Test-Header": "42"}}')
+        .end(function (err, res) {
+          should.not.exist(err);
+          res.should.have.status(204);
+        });
+    });
+
+    it('should return 400 for not existing callback', function(done) {
+      chai.request(server)
+        .put('/notification/callback')
+        .set('Content-Type', 'application/json')
+        .send('{"url": "http://localhost:9998/not_existing_callback", "headers": {}}')
+        .end(function (err, res) {
+          err.should.have.status(400);
 
           done();
         });
@@ -135,6 +184,30 @@ describe('Notifications interface', function () {
         .put('/notification/callback')
         .end(function (err, res) {
           err.should.have.status(415);
+
+          done();
+        });
+    });
+  });
+
+  describe('DELETE /notification/callback', function() {
+
+    it('should return 204 for existing callback deletion', function(done) {
+      chai.request(server)
+        .delete('/notification/callback')
+        .end(function (err, res) {
+          should.not.exist(err);
+          res.should.have.status(204);
+
+          done();
+        });
+    });
+
+    it('should return 404 for not existing callback deletion', function(done) {
+      chai.request(server)
+        .delete('/notification/callback')
+        .end(function (err, res) {
+          err.should.have.status(404);
 
           done();
         });

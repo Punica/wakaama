@@ -324,6 +324,8 @@ int main(int argc, char *argv[])
                                &rest_notifications_get_callback_cb, &rest);
     ulfius_add_endpoint_by_val(&instance, "PUT", "/notification/callback", NULL, 10,
                                &rest_notifications_put_callback_cb, &rest);
+    ulfius_add_endpoint_by_val(&instance, "DELETE", "/notification/callback", NULL, 10,
+                               &rest_notifications_delete_callback_cb, &rest);
     ulfius_add_endpoint_by_val(&instance, "GET", "/notification/pull", NULL, 10,
                                &rest_notifications_pull_cb, &rest);
 
