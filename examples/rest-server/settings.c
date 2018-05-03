@@ -27,8 +27,9 @@
 #include <string.h>
 
 #include "settings.h"
+#include "version.h"
 
-const char *argp_program_version = "restserver 1.0";
+const char *argp_program_version = RESTSERVER_FULL_VERSION;
 
 static char doc[] = "Restserver - interface to LwM2M server and all clients connected to it";
 

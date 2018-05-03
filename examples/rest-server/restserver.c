@@ -34,6 +34,7 @@
 #include "restserver.h"
 #include "logging.h"
 #include "settings.h"
+#include "version.h"
 
 static volatile int restserver_quit;
 static void sigint_handler(int signo)
@@ -109,6 +110,14 @@ const char *binding_to_string(lwm2m_binding_t bind)
     default:
         return "Unknown";
     }
+}
+
+
+int rest_version_cb(const ulfius_req_t *req, ulfius_resp_t *resp, void *context)
+{
+    ulfius_set_string_body_response(resp, 200, RESTSERVER_VERSION);
+
+    return U_CALLBACK_COMPLETE;
 }
 
 void client_monitor_cb(uint16_t clientID, lwm2m_uri_t *uriP, int status,
@@ -334,6 +343,9 @@ int main(int argc, char *argv[])
                                &rest_subscriptions_put_cb, &rest);
     ulfius_add_endpoint_by_val(&instance, "DELETE", "/subscriptions", ":name/*", 10,
                                &rest_subscriptions_delete_cb, &rest);
+
+    // Version
+    ulfius_add_endpoint_by_val(&instance, "GET", "/version", NULL, 10, &rest_version_cb, NULL);
 
     if (ulfius_start_framework(&instance) != U_OK)
     {

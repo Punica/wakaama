@@ -358,3 +358,32 @@ The code in this directory is licensed under the MIT license, however please not
   ```shell
   $ curl http://localhost:8888/notification/callback
   ```
+
+**Check [REST](./) API version**
+----
+  Retrieves current project version.
+
+* **URL**
+
+  /version
+
+* **Method:**
+  
+  `GET`
+
+* **Success Response:**
+
+  * **Code:** 200 <br />
+    **Content:** `MAJOR.MINOR.PATCH` <br />
+    
+1. MAJOR version when you make incompatible API changes,
+2. MINOR version when you add functionality in a backwards-compatible manner, and
+3. PATCH version when you make backwards-compatible bug fixes.
+
+    [More information about semantic versioning](https://semver.org/)
+ 
+* **Sample Call:**
+
+  ```shell
+  $ curl http://localhost:8888/version
+  ```
