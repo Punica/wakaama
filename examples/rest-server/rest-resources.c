@@ -23,7 +23,6 @@
  */
 
 #include <assert.h>
-#include <b64/cencode.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
@@ -32,7 +31,6 @@
 
 #include "logging.h"
 #include "restserver.h"
-
 
 typedef struct
 {

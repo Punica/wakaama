@@ -9,7 +9,7 @@
 1. Install tools and libraries required for project building for Debian based distributions (Debian, Ubuntu):
 ```
 $ sudo apt-get install -y git cmake build-essential
-$ sudo apt-get install -y libmicrohttpd-dev libjansson-dev libcurl4-gnutls-dev libb64-dev
+$ sudo apt-get install -y libmicrohttpd-dev libjansson-dev libcurl4-gnutls-dev
 ```
 2. Install required libraries from Github:
 ```
