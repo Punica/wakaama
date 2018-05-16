@@ -66,17 +66,17 @@ Usage: restserver [-?V] [-c FILE] [-l LOGGING_LEVEL] [--config=FILE]
      Example of configuration file:
      
 ```
-    {
-      "http": {
-        "port": 8888,
-      },
-      "coap": {
-        "port": 5555,
-      },
-      "logging": {
-        "level": 5
-      }
-    }
+{
+  "http": {
+    "port": 8888
+  },
+  "coap": {
+    "port": 5555
+  },
+  "logging": {
+    "level": 5
+  }
+}
 ```
     
 - `-l LOGGING_LEVEL` and `--log LOGGING_LEVEL` specify logging level from 0 to 5:
