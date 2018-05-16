@@ -18,11 +18,14 @@ class ClientInterface extends Client {
   connect(addr, callback) {
     // TODO: set address
 
-    this.on('state-change', state => {
+    function callbackOnRegistration(state) {
       if (state === 'registered') {
         callback(null, {});
+        this.removeListener('state-change', callbackOnRegistration);
       }
-    });
+    }
+
+    this.on('state-change', callbackOnRegistration);
 
     this.start();
   }
