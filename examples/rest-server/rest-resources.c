@@ -140,10 +140,23 @@ static int rest_resources_rwe_cb_unsafe(rest_context_t *rest,
         return U_CALLBACK_COMPLETE;
     }
 
-    if ((action == RES_ACTION_WRITE) || (action == RES_ACTION_EXEC))
+    if (action == RES_ACTION_WRITE)
     {
         format = http_to_coap_format(u_map_get_case(req->map_header, "Content-Type"));
         if (format == -1)
+        {
+            ulfius_set_empty_body_response(resp, 415);
+            return U_CALLBACK_COMPLETE;
+        }
+    }
+    else if (action == RES_ACTION_EXEC)
+    {
+        if ((u_map_get_case(req->map_header, "Content-Type") == NULL)
+            || (strcmp(u_map_get_case(req->map_header, "Content-Type"), "text/plain") == 0))
+        {
+            format = LWM2M_CONTENT_TEXT;
+        }
+        else
         {
             ulfius_set_empty_body_response(resp, 415);
             return U_CALLBACK_COMPLETE;
@@ -226,44 +239,32 @@ static int rest_resources_rwe_cb_unsafe(rest_context_t *rest,
                   rest->lwm2m, client->internalID, &uri,
                   rest_async_cb, async_context
               );
-        if (res != 0)
-        {
-            goto exit;
-        }
         break;
 
     case RES_ACTION_WRITE:
-    case RES_ACTION_EXEC:
-        if (action == RES_ACTION_WRITE)
-        {
-            res = lwm2m_dm_write(
-                      rest->lwm2m, client->internalID, &uri,
-                      format, async_context->payload, req->binary_body_length,
-                      rest_async_cb, async_context
-                  );
-        }
-        else if (action == RES_ACTION_EXEC)
-        {
-            res = lwm2m_dm_execute(
-                      rest->lwm2m, client->internalID, &uri,
-                      format, async_context->payload, req->binary_body_length,
-                      rest_async_cb, async_context
-                  );
-        }
-        else
-        {
-            assert(false); // fail-fast on unhandled action
-        }
+        res = lwm2m_dm_write(
+                  rest->lwm2m, client->internalID, &uri,
+                  format, async_context->payload, req->binary_body_length,
+                  rest_async_cb, async_context
+              );
+        break;
 
-        if (res != 0)
-        {
-            goto exit;
-        }
+    case RES_ACTION_EXEC:
+        res = lwm2m_dm_execute(
+                  rest->lwm2m, client->internalID, &uri,
+                  format, async_context->payload, req->binary_body_length,
+                  rest_async_cb, async_context
+              );
         break;
 
     default:
         assert(false); // if this happens, there's an error in the logic
         break;
+    }
+
+    if (res != 0)
+    {
+        goto exit;
     }
     rest_list_add(rest->pendingResponseList, async_context->response);
 
