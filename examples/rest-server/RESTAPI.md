@@ -6,7 +6,7 @@
   
   Along with asynchronous responses, other events are also put into the event channel. These include registration, update and deregistration notifications. Event channel structure details can be found below, in the **Poll events** API call description.
   
-  The REST API is similar to [MBED Device Connector API documentation](https://docs.mbed.com/docs/mbed-device-connector-web-interfaces/en/latest/api-reference/) and many functions should be compatible, however some differences are to be expected.
+  The REST API is similar to [MBED Device Connector API documentation](https://cloud.mbed.com/docs/v1.2/legacy-products/api-reference.html) and many functions should be compatible, however some differences are to be expected.
 
 **License**
 ----
