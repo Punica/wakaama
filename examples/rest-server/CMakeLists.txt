@@ -13,6 +13,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/../shared/shared.cmake)
 
 add_definitions(-DLWM2M_SERVER_MODE)
 add_definitions(${SHARED_DEFINITIONS} ${WAKAAMA_DEFINITIONS})
+add_definitions(-D_GNU_SOURCE)
 
 include_directories (${WAKAAMA_SOURCES_DIR} ${SHARED_INCLUDE_DIRS})
 
@@ -34,6 +35,7 @@ SET(SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/rest-resources.c
     ${CMAKE_CURRENT_LIST_DIR}/rest-notifications.c
     ${CMAKE_CURRENT_LIST_DIR}/rest-subscriptions.c
+    ${CMAKE_CURRENT_LIST_DIR}/rest-ssdp.c
     ${CMAKE_CURRENT_LIST_DIR}/rest-list.c
     ${CMAKE_CURRENT_LIST_DIR}/rest-utils.c
     ${CMAKE_CURRENT_LIST_DIR}/logging.c
@@ -43,8 +45,8 @@ SET(SOURCES
 add_executable(${PROJECT_NAME} ${SOURCES} ${WAKAAMA_SOURCES} ${SHARED_SOURCES})
 find_library(ULFIUS_LIB ulfius)
 find_library(JANSSON_LIB jansson)
-target_compile_options(restserver PRIVATE "-Wall")
-target_link_libraries(restserver "${ULFIUS_LIB}" "${JANSSON_LIB}")
+target_compile_options(restserver PRIVATE "-Wall" "-pthread")
+target_link_libraries(restserver pthread "${ULFIUS_LIB}" "${JANSSON_LIB}")
 
 if(CODE_COVERAGE)
     target_compile_options(restserver PRIVATE "-coverage")
