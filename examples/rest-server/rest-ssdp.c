@@ -192,7 +192,7 @@ ssdp_status_t ssdp_sock_open(ssdp_t *ssdp)
     status = setsockopt(ssdp->s_sock, SOL_SOCKET, SO_REUSEADDR, &(int) { 1 }, sizeof(int));
     if (status != 0)
     {
-        log_message(LOG_LEVEL_ERROR, "[SSDP] Failed to set sock options (%d)!\n", status);
+        log_message(LOG_LEVEL_ERROR, "[SSDP] Failed to set sock options (%d)!\n", errno);
         goto exit;
     }
 
@@ -200,7 +200,7 @@ ssdp_status_t ssdp_sock_open(ssdp_t *ssdp)
     status = bind(ssdp->s_sock, addr->ai_addr, addr->ai_addrlen);
     if (status != 0)
     {
-        log_message(LOG_LEVEL_ERROR, "[SSDP] Failed to bind socket (%d)!\n", status);
+        log_message(LOG_LEVEL_ERROR, "[SSDP] Failed to bind socket (%d)!\n", errno);
         goto exit;
     }
 
@@ -225,7 +225,7 @@ ssdp_status_t ssdp_sock_open(ssdp_t *ssdp)
                             &request, sizeof(request));
         if (status != 0)
         {
-            log_message(LOG_LEVEL_ERROR, "[SSDP] Failed to join multicast group (%d)!\n", status);
+            log_message(LOG_LEVEL_ERROR, "[SSDP] Failed to join multicast group (%d)!\n", errno);
             goto exit;
         }
     }
@@ -247,7 +247,7 @@ ssdp_status_t ssdp_sock_open(ssdp_t *ssdp)
                             &request, sizeof(request));
         if (status != 0)
         {
-            log_message(LOG_LEVEL_ERROR, "[SSDP] Failed to join multicast group (%d)!\n", status);
+            log_message(LOG_LEVEL_ERROR, "[SSDP] Failed to join multicast group (%d)!\n", errno);
             goto exit;
         }
     }
@@ -337,7 +337,7 @@ void *ssdp_run(void *arg)
                          (struct sockaddr *)&clientaddr, sizeof(clientaddr));
             if (len < 0)
             {
-                log_message(LOG_LEVEL_ERROR, "[SSDP] Failed to send response (%d)!\n", len);
+                log_message(LOG_LEVEL_ERROR, "[SSDP] Failed to send response (%d)!\n", errno);
             }
         }
     }
