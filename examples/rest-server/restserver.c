@@ -37,6 +37,7 @@
 #include "logging.h"
 #include "settings.h"
 #include "version.h"
+#include "security.h"
 
 
 static volatile int restserver_quit;
@@ -268,6 +269,12 @@ int main(int argc, char *argv[])
     {
         {
             8888, /* settings.http.port */
+            {
+                NULL, /* settings.http.security.private_key */
+                NULL, /* settings.http.security.certificate */
+                NULL, /* settings.http.security.private_key_file */
+                NULL, /* settings.http.security.certificate_file */
+            }, /* settings.http.security */
         },
         {
             5555, /* settings.coap.port */
@@ -352,10 +359,30 @@ int main(int argc, char *argv[])
     // Version
     ulfius_add_endpoint_by_val(&instance, "GET", "/version", NULL, 10, &rest_version_cb, NULL);
 
-    if (ulfius_start_framework(&instance) != U_OK)
+    if (settings.http.security.private_key != NULL || settings.http.security.certificate != NULL)
     {
-        log_message(LOG_LEVEL_FATAL, "Failed to start REST server!\n");
-        return -1;
+        if (security_load(&(settings.http.security)) != 0)
+        {
+            return -1;
+        }
+
+        if (ulfius_start_secure_framework(&instance,
+                                          settings.http.security.private_key_file,
+                                          settings.http.security.certificate_file) != U_OK)
+        {
+            log_message(LOG_LEVEL_FATAL, "Failed to start REST server!\n");
+            return -1;
+        }
+
+        security_unload(&(settings.http.security));
+    }
+    else
+    {
+        if (ulfius_start_framework(&instance) != U_OK)
+        {
+            log_message(LOG_LEVEL_FATAL, "Failed to start REST server!\n");
+            return -1;
+        }
     }
 
     /* SSDP service section */

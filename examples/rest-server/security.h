@@ -22,45 +22,18 @@
  * SOFTWARE.
  */
 
-#ifndef SETTINGS_H
-#define SETTINGS_H
-
-#include <stdint.h>
-#include <string.h>
-#include <jansson.h>
-#include <argp.h>
-
-#include "logging.h"
-#include "security.h"
+#ifndef SECURITY_H
+#define SECURITY_H
 
 typedef struct
 {
-    uint16_t port;
-    http_security_settings_t security;
-} http_settings_t;
+    char *private_key;
+    char *certificate;
+    char *private_key_file;
+    char *certificate_file;
+} http_security_settings_t;
 
-typedef struct
-{
-    uint16_t port;
-} coap_settings_t;
+int security_load(http_security_settings_t *settings);
+int security_unload(http_security_settings_t *settings);
 
-typedef struct
-{
-    logging_level_t level;
-} logging_settings_t;
-
-typedef struct
-{
-    http_settings_t http;
-    coap_settings_t coap;
-    logging_settings_t logging;
-} settings_t;
-
-int read_config(char *config_name, settings_t *settings);
-
-error_t parse_opt(int key, char *arg, struct argp_state *state);
-
-int settings_init(int argc, char *argv[], settings_t *settings);
-
-#endif // SETTINGS_H
-
+#endif // SECURITY_H
