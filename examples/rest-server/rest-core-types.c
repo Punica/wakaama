@@ -35,7 +35,7 @@
 static const char *base64_table =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-int rest_getrandom(void *buf, size_t buflen)
+size_t rest_get_random(void *buf, size_t buflen)
 {
     FILE *f;
     size_t len;
@@ -43,7 +43,7 @@ int rest_getrandom(void *buf, size_t buflen)
     f = fopen("/dev/urandom", "r");
     if (f == NULL)
     {
-        return -1;
+        return 0;
     }
 
     len = fread(buf, 1, buflen, f);
@@ -65,7 +65,7 @@ rest_async_response_t *rest_async_response_new(void)
     memset(response, 0, sizeof(rest_async_response_t));
 
     ts = time(NULL);
-    if (rest_getrandom(r, sizeof(r)) != sizeof(r))
+    if (rest_get_random(r, sizeof(r)) != sizeof(r))
     {
         return NULL;
     }

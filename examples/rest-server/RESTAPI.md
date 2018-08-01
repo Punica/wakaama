@@ -387,3 +387,70 @@ The code in this directory is licensed under the MIT license, however please not
   ```shell
   $ curl http://localhost:8888/version
   ```
+  
+**Authenticate JWT user**
+  ----
+  Retrieves JWT token issued for user (or error if authentication fails).
+
+* **URL**
+
+  /authenticate
+
+* **Method:**
+  
+  `POST`
+
+* **Success Response:**
+
+  * **Code:** 201 <br />
+    **Content:** `{"jwt":JWT_TOKEN_VALUE,"expires_in":JWT_EXPIRATION_TIME}` <br />
+    - `JWT_TOKEN_VALUE` is described in [official JWT website](https://jwt.io/)
+    - `JWT_EXPIRATION_TIME` time in seconds, after which client must renew his token
+      
+* **Error Response:**
+
+  * **Code:** 400 Bad Request - JWT token wasn't granted, either credentials are invalid or message format is incorrect <br />
+    **Content:** object with `error` key, which contains error status (`invalid_request` or `invalid_client`) <br />
+
+* **Sample Call:**
+
+  ```shell
+  $ curl https://localhost:8888/authenticate -X POST -H "Content-Type: application/json" --data '{"name": "admin", "secret": "not-same-as-name"}'
+  ```
+  
+  
+**Authorize request with JWT**
+  ----  
+  Perform any request providing token from ``POST /authenticate`` response.
+  *NOTE: If `jwt` section is not configured, jwt token (as well as authentication) is not required. `"GET /version"` request also doesn't require access token.*
+
+  
+  **Sample Call:**
+
+  ```shell
+  $ curl -X GET https://localhost:8888/endpoints/sensor-uuid/1/0/1 -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE1MzA3OTE1MDcsIm5hbWUiOiJhZG1pbiJ9.tk3B0J-rdPp8MyHqRHUWAtXjm0TsawBEfxQOoVEej0RQLQpt7oOp00Ocn3g44uCImq_hY26XhlGozceQ8Iarjg"
+  ```
+  
+  Retrieves JWT token issued for user (or error if authentication fails).
+  
+
+* **URL**
+
+  ``*`` (any URL)
+  
+* **Method:**
+  
+  ``*`` (any method)
+
+* **Success Response:**
+
+  On successful authorization, client receives response from requested resource URL. 
+      
+* **Error Response:**
+
+  On unsuccessful authorization, client receives following response:
+
+  * **Code:** 401 Unauthorized - JWT token wasn't granted, either credentials are invalid or message format is incorrect <br />
+    **Content:** Empty body, ``WWW-Authenticate`` header containing error code and description <br />
+  
+[More information about JWT](https://jwt.io)

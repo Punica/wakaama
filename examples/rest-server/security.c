@@ -25,6 +25,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <malloc.h>
+#include <jansson.h>
+#include <regex.h>
 
 #include "security.h"
 #include "logging.h"
@@ -62,7 +64,7 @@ int security_load(http_security_settings_t *settings)
 {
     if (settings->private_key == NULL || settings->certificate == NULL)
     {
-        log_message(LOG_LEVEL_ERROR, "Not enough security files provided!\n");
+        log_message(LOG_LEVEL_ERROR, "Not enough security files provided\n");
         return 1;
     }
 
@@ -71,10 +73,54 @@ int security_load(http_security_settings_t *settings)
 
     if (settings->private_key_file == NULL || settings->certificate_file == NULL)
     {
-        log_message(LOG_LEVEL_ERROR, "Failed to read security files!\n");
+        log_message(LOG_LEVEL_ERROR, "Failed to read security files\n");
         return 1;
     }
     log_message(LOG_LEVEL_TRACE, "Successfully loaded security configuration\n");
+
+    return 0;
+}
+
+user_t *security_user_new(void)
+{
+    user_t *user;
+
+    user = calloc(1, sizeof(user_t));
+    if (user == NULL)
+    {
+        log_message(LOG_LEVEL_FATAL, "[JWT] Failed to allocate user memory");
+    }
+
+    return user;
+}
+
+void security_user_delete(user_t *user)
+{
+    if (user->name)
+    {
+        memset(user->name, 0, strnlen(user->name, J_MAX_LENGTH_USER_NAME));
+    }
+
+    if (user->secret)
+    {
+        memset(user->secret, 0, strnlen(user->secret, J_MAX_LENGTH_USER_SECRET));
+    }
+
+    if (user->j_scope_list)
+    {
+        json_decref(user->j_scope_list);
+        user->j_scope_list = NULL;
+    }
+
+    free(user);
+}
+
+int security_user_set(user_t *user, const char *name, const char *secret, json_t *scope)
+{
+    user->name = strdup(name);
+    user->secret = strdup(secret);
+    user->j_scope_list = json_deep_copy(scope);
+
     return 0;
 }
 
@@ -87,4 +133,49 @@ int security_unload(http_security_settings_t *settings)
 
     log_message(LOG_LEVEL_TRACE, "Successfully unloaded security");
     return 0;
+}
+
+void jwt_init(jwt_settings_t *settings)
+{
+    settings->initialised = true;
+}
+
+void jwt_cleanup(jwt_settings_t *settings)
+{
+    rest_list_entry_t *entry;
+
+    if (settings->secret_key != NULL)
+    {
+        free(settings->secret_key);
+    }
+
+    for (entry = settings->users_list->head; entry != NULL; entry = entry->next)
+    {
+        security_user_delete((user_t *) entry->data);
+    }
+
+    rest_list_delete(settings->users_list);
+    settings->initialised = false;
+}
+
+int security_user_check_scope(user_t *user, char *required_scope)
+{
+    size_t index;
+    json_t *j_scope_pattern;
+    const char *scope_pattern;
+    regex_t regex;
+
+    json_array_foreach(user->j_scope_list, index, j_scope_pattern)
+    {
+        scope_pattern = json_string_value(j_scope_pattern);
+
+        regcomp(&regex, scope_pattern, REG_EXTENDED);
+
+        if (regexec(&regex, required_scope, 0, NULL, 0) == 0)
+        {
+            return 0;
+        }
+    }
+
+    return 1;
 }

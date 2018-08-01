@@ -15,6 +15,7 @@
     "mocha": "^3.5.0"
   },
   "dependencies": {
+    "jsonwebtoken": "^8.3.0",
     "restserver-api": "git+https://github.com/8devices/restserver-api.git#08e6a30"
   }
 }

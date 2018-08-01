@@ -13,6 +13,7 @@ before_install:
 
 install:
   - ./.travis/install_ulfius.sh
+  - ./.travis/install_jwt.sh
 
 before_script:
   - if [ "${TRAVIS_OS_NAME}" == "linux" ]; then

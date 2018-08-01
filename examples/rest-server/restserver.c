@@ -38,7 +38,8 @@
 #include "settings.h"
 #include "version.h"
 #include "security.h"
-
+#include "rest-list.h"
+#include "rest-authentication.h"
 
 static volatile int restserver_quit;
 static void sigint_handler(int signo)
@@ -267,22 +268,36 @@ int main(int argc, char *argv[])
 
     static settings_t settings =
     {
-        {
-            8888, /* settings.http.port */
-            {
-                NULL, /* settings.http.security.private_key */
-                NULL, /* settings.http.security.certificate */
-                NULL, /* settings.http.security.private_key_file */
-                NULL, /* settings.http.security.certificate_file */
-            }, /* settings.http.security */
+        .http = {
+            .port = 8888,
+            .security = {
+                .private_key = NULL,
+                .certificate = NULL,
+                .private_key_file = NULL,
+                .certificate_file = NULL,
+                .jwt = {
+                    .initialised = false,
+                    .algorithm = JWT_ALG_HS512,
+                    .secret_key = NULL,
+                    .secret_key_length = 32,
+                    .users_list = NULL,
+                    .expiration_time = 3600,
+                },
+            },
         },
-        {
-            5555, /* settings.coap.port */
+        .coap = {
+            .port = 5555,
         },
-        {
-            LOG_LEVEL_WARN, /* settings.logging.level */
+        .logging = {
+            .level = LOG_LEVEL_WARN,
         },
     };
+
+    settings.http.security.jwt.users_list = rest_list_new();
+    settings.http.security.jwt.secret_key = (unsigned char *) malloc(
+                                                settings.http.security.jwt.secret_key_length * sizeof(unsigned char));
+    rest_get_random(settings.http.security.jwt.secret_key,
+                    settings.http.security.jwt.secret_key_length);
 
     if (settings_init(argc, argv, &settings) != 0)
     {
@@ -357,7 +372,13 @@ int main(int argc, char *argv[])
                                &rest_subscriptions_delete_cb, &rest);
 
     // Version
-    ulfius_add_endpoint_by_val(&instance, "GET", "/version", NULL, 10, &rest_version_cb, NULL);
+    ulfius_add_endpoint_by_val(&instance, "GET", "/version", NULL, 1, &rest_version_cb, NULL);
+
+    // JWT authentication
+    ulfius_add_endpoint_by_val(&instance, "POST", "/authenticate", NULL, 1, &rest_authenticate_cb,
+                               (void *)&settings.http.security.jwt);
+    ulfius_add_endpoint_by_val(&instance, "*", "*", NULL, 3, &rest_validate_jwt_cb,
+                               (void *)&settings.http.security.jwt);
 
     if (settings.http.security.private_key != NULL || settings.http.security.certificate != NULL)
     {
@@ -374,6 +395,11 @@ int main(int argc, char *argv[])
             return -1;
         }
 
+        if (!settings.http.security.jwt.initialised)
+        {
+            log_message(LOG_LEVEL_WARN, "Encryption without authentication is unadvisable!\n");
+        }
+
         security_unload(&(settings.http.security));
     }
     else
@@ -382,6 +408,23 @@ int main(int argc, char *argv[])
         {
             log_message(LOG_LEVEL_FATAL, "Failed to start REST server!\n");
             return -1;
+        }
+
+        if (settings.http.security.jwt.initialised)
+        {
+            log_message(LOG_LEVEL_WARN, "Authentication without encryption is unadvisable!\n");
+        }
+    }
+
+    if (settings.http.security.jwt.initialised)
+    {
+        if (settings.http.security.jwt.users_list->head == NULL)
+        {
+            log_message(LOG_LEVEL_WARN, "JWT is initialised but no users are configured properly!\n");
+        }
+        if (settings.http.security.jwt.secret_key == NULL)
+        {
+            log_message(LOG_LEVEL_WARN, "JWT is initialised but secret key is unavalable!\n");
         }
     }
 
@@ -455,6 +498,8 @@ int main(int argc, char *argv[])
 
     lwm2m_close(rest.lwm2m);
     rest_cleanup(&rest);
+
+    jwt_cleanup(&settings.http.security.jwt);
 
     return 0;
 }

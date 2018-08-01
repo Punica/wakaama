@@ -25,15 +25,69 @@
 #ifndef SECURITY_H
 #define SECURITY_H
 
+#include <jwt.h>
+#include <ulfius.h>
+#include <stdint.h>
+#include <stdbool.h>
+
+#include "rest-list.h"
+
+enum
+{
+    J_MAX_LENGTH_SECRET_KEY = 1024,
+    J_MAX_LENGTH_METHOD = 8,
+    J_MAX_LENGTH_URL = 2048,
+    J_MAX_LENGTH_USER_NAME = 1024,
+    J_MAX_LENGTH_USER_SECRET = 1024,
+};
+
+typedef enum
+{
+    J_OK,
+    J_ERROR,
+    J_ERROR_INTERNAL,
+    J_ERROR_INVALID_REQUEST,
+    J_ERROR_INVALID_TOKEN,
+    J_ERROR_EXPIRED_TOKEN,
+    J_ERROR_INSUFFICIENT_SCOPE
+} jwt_error_t;
+
+typedef struct
+{
+    char *name;
+    char *secret;
+    json_t *j_scope_list;
+} user_t;
+
+typedef struct
+{
+    bool initialised;
+    jwt_alg_t algorithm;
+    unsigned char *secret_key;
+    size_t secret_key_length;
+    rest_list_t *users_list;
+    json_int_t expiration_time;
+} jwt_settings_t;
+
 typedef struct
 {
     char *private_key;
     char *certificate;
     char *private_key_file;
     char *certificate_file;
+    jwt_settings_t jwt;
 } http_security_settings_t;
 
 int security_load(http_security_settings_t *settings);
 int security_unload(http_security_settings_t *settings);
+
+void jwt_init(jwt_settings_t *settings);
+void jwt_cleanup(jwt_settings_t *settings);
+
+user_t *security_user_new();
+int security_user_set(user_t *user, const char *name, const char *secret, json_t *scope);
+void security_user_delete(user_t *user);
+
+int security_user_check_scope(user_t *user, char *required_scope);
 
 #endif // SECURITY_H
