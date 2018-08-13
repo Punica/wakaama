@@ -25,6 +25,8 @@
 #ifndef LOGGING_H
 #define LOGGING_H
 
+#include <stdbool.h>
+
 typedef enum
 {
     LOG_LEVEL_FATAL = 0,
@@ -35,9 +37,16 @@ typedef enum
     LOG_LEVEL_TRACE = 5,
 } logging_level_t;
 
-int logging_init(logging_level_t logging_level);
+typedef struct
+{
+    logging_level_t level;
+    bool timestamp;
+    bool human_readable_timestamp;
+} logging_settings_t;
 
-int log_message(logging_level_t logging_level, char *format, ...);
+int logging_init(logging_settings_t *settings);
+
+int log_message(logging_level_t level, char *format, ...);
 
 #endif // LOGGING_H
 

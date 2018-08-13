@@ -290,6 +290,8 @@ int main(int argc, char *argv[])
         },
         .logging = {
             .level = LOG_LEVEL_WARN,
+            .timestamp = false,
+            .human_readable_timestamp = false,
         },
     };
 
@@ -304,7 +306,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    logging_init(settings.logging.level);
+    logging_init(&settings.logging);
 
     init_signals();
 

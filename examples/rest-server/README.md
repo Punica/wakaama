@@ -142,6 +142,8 @@ Example of configuration file:
     "port": 5555
   },
   "logging": {
+    "timestamp": true,
+    "human_readable_timestamp": true,
     "level": 5
   }
 }
@@ -172,3 +174,5 @@ Example of configuration file:
 
 - **`logging`**
   - `level` _(integer)_ - visible messages logging level requirement (is mentioned in arguments list).  _**Optional**, default value is 2 (LOG_LEVEL_WARN)._
+  - `timestamp` _(boolean)_ - value which enables or disables logging timestamp.  _**Optional**, default value is `false` (no timestamp)._
+  - `human_readable_timestamp` _(boolean)_ - value which enables or disables human readable logging timestamp format.  _**Optional**, default value is `false` (not human readable - UNIX format). Unix format: `SECONDS_SINCE_EPOCH.MILISECONDS_SINCE_EPOCH` e.g. `2499347366.535`, Human readable format: `YEAR-MONTH-DAY HOURS:MINUTES:SECONDS.MILISECONDS` e.g. `2049-03-14 15:09:26.535`_

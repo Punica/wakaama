@@ -46,11 +46,6 @@ typedef struct
 
 typedef struct
 {
-    logging_level_t level;
-} logging_settings_t;
-
-typedef struct
-{
     http_settings_t http;
     coap_settings_t coap;
     logging_settings_t logging;
