@@ -6,27 +6,14 @@ dist: trusty
 compiler: 
   - gcc
 
-before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -y libmicrohttpd-dev libjansson-dev libb64-dev
-#  - sudo apt-get install -y libcurl4-gnutls-dev libgnutls28-dev libgcrypt20-dev
-
-install:
-  - ./.travis/install_ulfius.sh
-  - ./.travis/install_jwt.sh
-
 before_script:
   - if [ "${TRAVIS_OS_NAME}" == "linux" ]; then
       sudo sh -c 'echo 0 > /proc/sys/net/ipv6/conf/all/disable_ipv6';
     fi
 
 script:
-  - ./scripts/format_style.sh --dry-run
-  - ./scripts/build.sh
-  - ./scripts/test.sh
+  - ./script/cibuild
 
-after_success:
-  - cp -r build core examples secure
+after_script:
   - bash <(curl -s https://codecov.io/bash) -cZF secure -p secure -s ./
-  - cp -r build core examples regular
   - bash <(curl -s https://codecov.io/bash) -cZF regular -p regular -s ./

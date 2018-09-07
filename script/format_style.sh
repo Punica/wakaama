@@ -1,4 +1,6 @@
-#!/bin/bash -e
+#!/bin/bash
+
+set -e
 
 ASTYLE=./astyle/build/gcc/bin/astyle
 ASTYLE_OPTS="--options=.astyle.conf $@"

@@ -6,6 +6,17 @@
 
 **Building**
 ----
+Building and preparing project for use is done by executing setup script, however if manual building of the project is needed, steps are described in ***Building Manually*** section.
+
+***Building Automatically***
+
+1. Execute `script/setup` script:
+```
+$ script/setup
+```
+
+***Building Manually***
+
 1. Install tools and libraries required for project building for Debian based distributions (Debian, Ubuntu):
 ```
 $ sudo apt-get install -y git cmake build-essential
