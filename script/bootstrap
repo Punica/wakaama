@@ -24,6 +24,7 @@
 #
 
 set -e
+TMP_BUILD_DIR="$(mktemp -d)"
 
 update_repositories () {
     if which apt-get; then
@@ -47,7 +48,7 @@ update_repositories () {
 
 install_build_tools () {
     if which apt-get; then
-        sudo apt-get install -yqq git cmake build-essential automake
+        sudo apt-get install -yqq git cmake build-essential automake libtool
     elif which rpm; then
         echo "RPM is not supported yet!"
         return 1
@@ -166,9 +167,12 @@ install_build_tools
 echo "==> Installing dependencies..."
 install_dependencies
 
-cd "$(dirname "$0")/.."
+cd "${TMP_BUILD_DIR}"
+
 echo "==> Installing libjwt..."
 install_libjwt
 
 echo "==> Installing ulfius..."
 install_ulfius_orcania_yder
+
+rm -r "${TMP_BUILD_DIR}"
