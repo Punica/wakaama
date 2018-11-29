@@ -14,6 +14,12 @@
 .project
 .settings
 
+# Vim
+*.swp
+
+# Node.js
+node_modules
+
 # QtCreator
 build-*
 

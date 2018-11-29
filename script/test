@@ -1,0 +1,103 @@
+#!/bin/sh
+#
+# MIT License
+#
+# Copyright (c) 2018 8devices
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+
+set -e
+
+generate_key_and_certificate () {
+    if [ "$#" -ne 2 ]; then
+        echo "Illegal number of parameters"
+        return 1
+    fi
+
+    if [ -z "$1" ]; then
+        echo "Private key file name argument is missing or is invalid"
+        return 1
+    fi
+    
+    if [ -z "$2" ]; then
+        echo "Certificate file name argument is missing or is invalid"
+        return 1
+    fi
+
+    openssl genrsa -out $1 2048
+
+    openssl req -days 365 -out $2 -new -x509 -key $1 -subj '/CN=localhost'
+
+    return 0
+}
+
+run_restserver () {
+    initial_restserver_arguments=""
+    restserver_command="build/restserver ${initial_restserver_arguments}"
+
+    if ! [ -z "$1" ]; then
+        coverage_prefix="GCOV_PREFIX_STRIP=5 GCOV_PREFIX=$1"
+        restserver_command="${coverage_prefix} ${restserver_command}"
+    fi
+
+    if ! [ -z "$2" ]; then
+        restserver_arguments="$2"
+        restserver_command="${restserver_command} ${restserver_arguments}"
+    fi
+
+    eval "${restserver_command} > /dev/null &"
+
+    echo $!
+}
+
+stop_restserver () {
+    eval "kill -2 $1"
+    wait $1 || true
+}
+
+cd "$(dirname "$0")/.."
+script/format_style.sh --dry-run
+
+if [ ! -x build/restserver ]
+then
+    echo "Restserver binary not found! Exiting..."
+    exit 1
+fi
+
+echo "==> Generating security files..."
+generate_key_and_certificate "private.key" "certificate.pem"
+generate_key_and_certificate "other_private.key" "other_certificate.pem"
+
+echo "==> Starting restserver(-s)..."
+REGULAR_RESTSERVER_PID=$(run_restserver "regular")
+SECURE_RESTSERVER_PID=$(run_restserver "secure" "-c ./tests-rest/secure.cfg")
+
+echo "==> Running coverage tests..."
+if cd tests-rest && npm install && npm test
+then
+    coverage_tests_status=0
+else
+    coverage_tests_status=1
+fi
+
+echo "==> Stopping restserver(-s)..."
+stop_restserver $REGULAR_RESTSERVER_PID
+stop_restserver $SECURE_RESTSERVER_PID
+exit $coverage_tests_status

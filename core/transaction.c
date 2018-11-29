@@ -126,6 +126,12 @@ static int prv_checkFinished(lwm2m_transaction_t * transacP,
         // response
         return transacP->ack_received ? 1 : 0;
     }
+
+    // Received message must be a response
+    if (receivedMessage->code < CREATED_2_01 - 1) {
+        return 0;
+    }
+
     if (!IS_OPTION(transactionMessage, COAP_OPTION_TOKEN))
     {
         // request without token
@@ -260,6 +266,27 @@ void transaction_remove(lwm2m_context_t * contextP,
     LOG("Entering");
     contextP->transactionList = (lwm2m_transaction_t *) LWM2M_LIST_RM(contextP->transactionList, transacP->mID, NULL);
     transaction_free(transacP);
+}
+
+void transaction_remove_all(lwm2m_context_t * contextP,
+                            void * sessionH)
+{
+    lwm2m_transaction_t * transacP;
+    lwm2m_transaction_t * nextP;
+
+    transacP = contextP->transactionList;
+    while (transacP != NULL)
+    {
+        nextP = transacP->next;
+
+        if (lwm2m_session_is_equal(sessionH, transacP->peerH, contextP->userData) == true)
+        {
+            transaction_remove(contextP, transacP);
+
+        }
+
+        transacP = nextP;
+    }
 }
 
 bool transaction_handleResponse(lwm2m_context_t * contextP,
@@ -411,7 +438,7 @@ int transaction_send(lwm2m_context_t * contextP,
         }
     }
 
-    if (transacP->ack_received || maxRetriesReached)
+    if (maxRetriesReached)
     {
         if (transacP->callback)
         {
