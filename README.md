@@ -1,150 +1,149 @@
-Wakaama (formerly liblwm2m) is an implementation of the Open Mobile Alliance's LightWeight M2M
-protocol (LWM2M).
+#Punica
 
-Developers mailing list: https://dev.eclipse.org/mailman/listinfo/wakaama-dev
-
-## Source Layout
-
-    -+- core                   (the LWM2M engine)
-     |    |
-     |    +- er-coap-13        (Slightly modified Erbium's CoAP engine from
-     |                          http://people.inf.ethz.ch/mkovatsc/erbium.php
-     |
-     +- tests                  (test cases)
-     |
-     +- examples
-          |
-          +- bootstrap_server  (a command-line LWM2M bootstrap server)
-          |
-          +- client            (a command-line LWM2M client with several test objects)
-          |
-          +- lightclient       (a very simple command-line LWM2M client with several test objects)
-          |
-          +- server            (a command-line LWM2M server)
-          |
-          +- shared            (utility functions for connection handling and command-
-                                line interface)
-
-
-## Compiling
-
-Wakaama is not a library but files to be built with an application.
-Wakaama uses CMake >= 3. Look at examples/server/CMakeLists.txt for an
-example of how to include it.
-Several compilation switches are used:
- - LWM2M_BIG_ENDIAN if your target platform uses big-endian format.
- - LWM2M_LITTLE_ENDIAN if your target platform uses little-endian format.
- - LWM2M_CLIENT_MODE to enable LWM2M Client interfaces.
- - LWM2M_SERVER_MODE to enable LWM2M Server interfaces.
- - LWM2M_BOOTSTRAP_SERVER_MODE to enable LWM2M Bootstrap Server interfaces.
- - LWM2M_BOOTSTRAP to enable LWM2M Bootstrap support in a LWM2M Client.
- - LWM2M_SUPPORT_JSON to enable JSON payload support (implicit when defining LWM2M_SERVER_MODE)
- - LWM2M_OLD_CONTENT_FORMAT_SUPPORT to support the deprecated content format values for TLV and JSON.
-
-Depending on your platform, you need to define LWM2M_BIG_ENDIAN or LWM2M_LITTLE_ENDIAN.
-LWM2M_CLIENT_MODE and LWM2M_SERVER_MODE can be defined at the same time.
-
-
-## Examples
-
-There are some example applications provided to test the server, client and bootstrap capabilities of Wakaama.
-The following recipes assume you are on a unix like platform and you have cmake and make installed.
-
-### Server example
- * Create a build directory and change to that.
- * ``cmake [wakaama directory]/examples/server``
- * ``make``
- * ``./lwm2mserver [Options]``
-
-The lwm2mserver listens on UDP port 5683. It features a basic command line
-interface. Type 'help' for a list of supported commands.
-
-Options are:
- - -4		Use IPv4 connection. Default: IPv6 connection
-
-### Test client example
- * Create a build directory and change to that.
- * ``cmake [wakaama directory]/examples/client``
- * ``make``
- * ``./lwm2mclient [Options]``
-
-DTLS feature requires the tinydtls submodule. To include it, on the first run,
-use the following commands to retrieve the sources:
- * ``git submodule init``
- * ``git submodule update``
-
-You need to install autoconf and automake to build with tinydtls.
-
-Build with tinydtls:
- * Create a build directory and change to that.
- * ``cmake -DDTLS=1 [wakaama directory]/examples/client``
- * ``make``
- * ``./lwm2mclient [Options]``
-
-The lwm2mclient features nine LWM2M objects:
- - Security Object (id: 0)
- - Server Object (id: 1)
- - Access Control Object (id: 2) as a skeleton
- - Device Object (id: 3) containing hard-coded values from the Example LWM2M
- Client of Appendix E of the LWM2M Technical Specification.
- - Connectivity Monitoring Object (id: 4) as a skeleton
- - Firmware Update Object (id: 5) as a skeleton.
- - Location Object (id: 6) as a skeleton.
- - Connectivity Statistics Object (id: 7) as a skeleton.
- - Test Object (id: 31024) with the following description:
-
-                           Multiple
-          Object |  ID   | Instances | Mandatory |
-           Test  | 31024 |    Yes    |    No     |
-
-           Resources:
-                       Supported    Multiple
-           Name | ID | Operations | Instances | Mandatory |  Type   | Range |
-           test |  1 |    R/W     |    No     |    Yes    | Integer | 0-255 |
-           exec |  2 |     E      |    No     |    Yes    |         |       |
-           dec  |  3 |    R/W     |    No     |    Yes    |  Float  |       |
-
-The lwm2mclient opens udp port 56830 and tries to register to a LWM2M Server at
-127.0.0.1:5683. It features a basic command line interface. Type 'help' for a
-list of supported commands.
-
-Options are:
-- -n NAME	Set the endpoint name of the Client. Default: testlwm2mclient
-- -l PORT	Set the local UDP port of the Client. Default: 56830
-- -h HOST	Set the hostname of the LWM2M Server to connect to. Default: localhost
-- -p HOST	Set the port of the LWM2M Server to connect to. Default: 5683
-- -4		Use IPv4 connection. Default: IPv6 connection
-- -t TIME	Set the lifetime of the Client. Default: 300
-- -b		Bootstrap requested.
-- -c		Change battery level over time.
+**Introduction**
+----
+  Punica contains easy to use interface to the LwM2M server and client communication.
   
-If DTLS feature enable:
-- -i Set the device management or bootstrap server PSK identity. If not set use none secure mode
-- -s Set the device management or bootstrap server Pre-Shared-Key. If not set use none secure mode
+  Detailed [Punica documentation](./doc/PUNICA_API.md).
 
-To launch a bootstrap session:
-``./lwm2mclient -b``
+**Building**
+----
+Punica follows [scripts to rule them all](https://github.com/github/scripts-to-rule-them-all) guidelines, therefore getting dependencies,
+building and testing is implemented by executing scripts, however if you want,
+you can read [manual project build instructions](./doc/MANUAL_BUILD.md).
 
-### Simpler test client example
+1. Build Punica by executing ```script/setup``` script, it will automatically
+acquire and build required dependencies, after that script will build Punica:
+```# script/setup```
 
-In the any directory, run the following commands:
- * Create a build directory and change to that.
- * ``cmake [wakaama directory]/examples/lightclient``
- * ``make``
- * ``./lightclient [Options]``
+If script succeeds, you should have binary file called `punica` in your `punica/build/` directory.
 
-The lightclient is much simpler that the lwm2mclient and features only four
-LWM2M objects:
- - Security Object (id: 0)
- - Server Object (id: 1)
- - Device Object (id: 3) containing hard-coded values from the Example LWM2M
- Client of Appendix E of the LWM2M Technical Specification.
- - Test Object (id: 31024) from the lwm2mclient as described above.
+**Usage**
+----
+You can get some details about `punica` by using `--help` or `-?` argument:
+```
+punica/build $ ./punica --usage
+Usage: punica [OPTION...]
+Punica - interface to LwM2M server and all clients connected to it
 
-The lightclient does not feature any command-line interface.
+  -c, --config=FILE          Specify parameters configuration file
+  -l, --log=LOGGING_LEVEL    Specify logging level (0-5)
+  -?, --help                 Give this help list
+      --usage                Give a short usage message
+  -V, --version              Print program version
 
-Options are:
- -  -n NAME	Set the endpoint name of the Client. Default: testlightclient
- - -l PORT	Set the local UDP port of the Client. Default: 56830
- - -4		Use IPv4 connection. Default: IPv6 connection
+Mandatory or optional arguments to long options are also mandatory or optional
+for any corresponding short options.
+```
 
+You can get some details about `punica` usage by using `--usage` argument:
+```
+punica/build $ ./punica --usage
+Usage: punica [-?V] [-c FILE] [-C CERTIFICATE] [-k PRIVATE_KEY]
+            [-l LOGGING_LEVEL] [--config=FILE] [--certificate=CERTIFICATE]
+            [--private_key=PRIVATE_KEY] [--log=LOGGING_LEVEL] [--help]
+```
+
+**Arguments list:**
+- `-c CONFIG_FILE` and `--config CONFIG_FILE` is used to load config file.
+
+     Example of configuration file is in configuration section (below)
+     
+- `-k PRIVATE_KEY` and `--private_key PRIVATE_KEY` specify TLS security private key file.
+  Private key could be generated with following command:
+  ```
+  $ openssl genrsa -out private.key 2048
+  ```
+  
+- `-C CERTIFICATE` and `--certificate CERTIFICATE` specify TLS security certificate file.
+  Certificate could be generated with following command (it requires private key file)
+  ```
+  $ openssl req -days 365 -new -x509 -key private.key -out certificate.pem
+  ```
+  
+- `-l LOGGING_LEVEL` and `--log LOGGING_LEVEL` specify logging level from 0 to 5:
+
+    `0: FATAL` - only very important messages are printed to console (usually the ones that inform about program malfunction).
+    
+    `1: ERROR` - important messages are printed to console (usually the ones that inform about service malfunction).
+    
+    `2: WARN` - warnings about possible malfunctions are reported.
+    
+    `3: INFO` - information about service actions (e.g., registration of new clients).
+    
+    `4: DEBUG` - more detailed information about service actions (e.g., detailed information about new clients).
+    
+    `5: TRACE` - very detailed information about program actions, including code tracing.
+    
+- `-V` and `--version` - print program version.
+
+**configuration file**
+
+_Please note that configuration file is **OPTIONAL**! That means, that server will work properly without configuration file, however it wont be secure (no encryption nor authentication), therefore it is highly **RECOMMENDED** to configure server properly._
+
+Example of configuration file:
+```
+{
+  "http": {
+    "port": 8888,
+    "security": {
+      "private_key": "private.key",
+      "certificate": "certificate.pem",
+      "jwt": {
+        "secret_key": "some-very-secret-key",
+        "algorithm": "HS512",
+        "expiration_time": 3600,
+        "users": [
+          {
+            "name": "admin",
+            "secret": "not-same-as-name",
+            "scope": [".*"]
+          },
+          {
+            "name": "get-all",
+            "secret": "lets-get",
+            "scope": ["GET.*$"]
+          },
+          {
+            "name": "one-device",
+            "secret": "only-one-dev",
+            "scope": [".* /endpoints/threeSeven/.*"]
+          }
+        ]
+      }
+    }
+  },
+  "coap": {
+    "port": 5555
+  },
+  "logging": {
+    "level": 5
+  }
+}
+```
+
+- **`http` settings section:**
+  - `port` _(integer)_ - HTTP port to create socket on (is mentioned in arguments list). _**Optional**, default value is 8888._
+  
+  - **`security` settings subsection:**
+    - ``private_key`` _(string)_ - TLS security private key file name (is mentioned in arguments list). _If you want to configure encryption, this option is **mandatory**._
+    - ``certificate`` _(string)_ - TLS security certificate file name (is mentioned in arguments list). _If you want to configure encryption, this option is **mandatory**._
+    - **`jwt` settings subsection (more about JWT could be found in [official website](https://jwt.io/)):**
+      -  ``secret_key`` _(string)_ - Key which will be used in token signing and verification. _**Optional**, default value is randomly generated 32 bytes of data._
+      -  ``algorithm`` _(string)_ - Signature encoding method. Valid values: ``"HS256"``, ``"HS384"``, ``"HS512"``, ``"RS256"``, ``"RS384"``, ``"RS512"``, ``"ES256"``, ``"ES384"``, ``"ES512"``. _**Optional**, default value is ``"HS512"``._
+      -  ``expiration_time`` _(integer)_ - Seconds after which token is expired and wont be accepted anymore, default is `3600`. _**Optional**, default value is 3600._
+      -  ``users``  _(list of objects)_ - List, which contains JWT authentication users. If no Users are specified, authentication wont work properly . _If you want to configure authentication, this option is **mandatory**._
+      
+         User object structure (more in [Punica documentation](./doc/PUNICA_API.md)):
+         - ``name`` _(string)_ - User name, which will be used on authentication process. _If you want to configure user authentication, this option is **mandatory**._
+         - ``secret`` _(string)_ - User secret, which will be used on authentication process.  _If you want to configure user authentication, this option is **mandatory**._
+         - ``scope`` _(list of strings)_ - User scope, which will be used on validating user request access, if user wont have required scope, it will get _Access Denied_.  _If you want to configure user authentication, this option is **optional**, however if scope is not specified, user will have access only to ``GET /version`` request._
+         
+         User scope should be **Regular expression pattern**, for example if you want user to have access to all GET requests , pattern should be `"GET .*"`, or if you would like user to have access to specific device manipulation: `".* /endpoints/threeSeven/.*"`, ultimate scope (all access) would be `".*"`.
+         
+  
+- **`coap`**
+  - `port` _(integer)_ - COAP port to create socket on (is mentioned in arguments list). _**Optional**, default value is 5555._
+
+- **`logging`**
+  - `level` _(integer)_ - visible messages logging level requirement (is mentioned in arguments list).  _**Optional**, default value is 2 (LOG_LEVEL_WARN)._

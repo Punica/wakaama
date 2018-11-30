@@ -1,3 +1,6 @@
 [submodule "platforms/Linux/tinydtls"]
 	path = examples/shared/tinydtls
 	url = https://git.eclipse.org/r/tinydtls/org.eclipse.tinydtls
+[submodule "third_party/wakaama"]
+	path = third_party/wakaama
+	url = https://github.com/punica/wakaama
