@@ -321,7 +321,7 @@ static int prv_parseItem(uint8_t * buffer,
                 if (recordP->ids[0] != LWM2M_MAX_ID) return -1;
 
                 // Check for " around URI
-                if (valueLen < 3
+                if (valueLen < 2
                  || buffer[index+valueStart] != '"'
                  || buffer[index+valueStart+valueLen-1] != '"')
                 {
@@ -339,27 +339,30 @@ static int prv_parseItem(uint8_t * buffer,
                 }
                 i = 0;
                 j = 0;
-                do {
-                    uint32_t readId;
+                if (valueLen > 1)
+                {
+                    do {
+                        uint32_t readId;
 
-                    readId = 0;
-                    i++;
-                    while (i < valueLen-1 && buffer[index+valueStart+i] != '/')
-                    {
-                        if (buffer[index+valueStart+i] < '0'
-                         || buffer[index+valueStart+i] > '9')
-                        {
-                            return -1;
-                        }
-                        readId *= 10;
-                        readId += buffer[index+valueStart+i] - '0';
-                        if (readId > LWM2M_MAX_ID) return -1;
+                        readId = 0;
                         i++;
-                    }
-                    recordP->ids[j] = readId;
-                    j++;
-                } while (i < valueLen-1 && j < 4 && buffer[index+valueStart+i] == '/');
-                if (i < valueLen-1 ) return -1;
+                        while (i < valueLen-1 && buffer[index+valueStart+i] != '/')
+                        {
+                            if (buffer[index+valueStart+i] < '0'
+                             || buffer[index+valueStart+i] > '9')
+                            {
+                                return -1;
+                            }
+                            readId *= 10;
+                            readId += buffer[index+valueStart+i] - '0';
+                            if (readId > LWM2M_MAX_ID) return -1;
+                            i++;
+                        }
+                        recordP->ids[j] = readId;
+                        j++;
+                    } while (i < valueLen-1 && j < 4 && buffer[index+valueStart+i] == '/');
+                    if (i < valueLen-1 ) return -1;
+                }
             }
             break;
 
@@ -598,7 +601,7 @@ static int prv_convertRecord(lwm2m_uri_t * uriP,
                 parentP->value.asChildren.array = lwm2m_data_new(1);
                 if (NULL == parentP->value.asChildren.array) goto error;
                 parentP = parentP->value.asChildren.array;
-                parentP->type = LWM2M_TYPE_UNDEFINED;
+                parentP->type = LWM2M_TYPE_MULTIPLE_RESOURCE;
                 parentP->id = uriP->resourceId;
                 rootLevel = URI_DEPTH_RESOURCE_INSTANCE;
             }
@@ -1120,7 +1123,7 @@ static int prv_serializeValue(lwm2m_data_t * tlvP,
         head = JSON_ITEM_STRING_BEGIN_SIZE;
 
         res = utils_base64Encode(tlvP->value.asBuffer.buffer, tlvP->value.asBuffer.length, buffer+head, bufferLen - head);
-        if (res == 0) return -1;
+        if (tlvP->value.asBuffer.length != 0 && res == 0) return -1;
         head += res;
 
         if (bufferLen - head < JSON_ITEM_STRING_END_SIZE) return -1;
@@ -1414,7 +1417,7 @@ int json_serialize(lwm2m_uri_t * uriP,
         int res;
 
         res = prv_serializeData(targetP + index, NULL, 0, bufferJSON + head, PRV_JSON_BUFFER_SIZE - head);
-        if (res < 0) return 0;
+        if (res < 0) return res;
         head += res;
     }
 
@@ -1426,7 +1429,7 @@ int json_serialize(lwm2m_uri_t * uriP,
     head = head + JSON_FOOTER_SIZE;
 
     *bufferP = (uint8_t *)lwm2m_malloc(head);
-    if (*bufferP == NULL) return 0;
+    if (*bufferP == NULL) return -1;
     memcpy(*bufferP, bufferJSON, head);
 
     return head;
