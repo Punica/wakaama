@@ -27,6 +27,7 @@ set(SOURCES
     )
 
 add_definitions(${SHARED_DEFINITIONS} ${WAKAAMA_DEFINITIONS})
+add_definitions(-DLWM2M_SERVER_MODE)
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES})
 
