@@ -143,6 +143,8 @@
 #define QUERY_STARTER       "?"
 #define QUERY_NAME          "ep="
 #define QUERY_NAME_LEN      3       // strlen("ep=")
+#define QUERY_TYPE          "et="
+#define QUERY_TYPE_LEN      3
 #define QUERY_SMS           "sms="
 #define QUERY_SMS_LEN       4
 #define QUERY_LIFETIME      "lt="
@@ -266,6 +268,7 @@ lwm2m_transaction_t * transaction_new(void * sessionH, coap_method_t method, cha
 int transaction_send(lwm2m_context_t * contextP, lwm2m_transaction_t * transacP);
 void transaction_free(lwm2m_transaction_t * transacP);
 void transaction_remove(lwm2m_context_t * contextP, lwm2m_transaction_t * transacP);
+void transaction_remove_all(lwm2m_context_t * contextP, void * sessionH);
 bool transaction_handleResponse(lwm2m_context_t * contextP, void * fromSessionH, coap_packet_t * message, coap_packet_t * response);
 void transaction_step(lwm2m_context_t * contextP, time_t currentTime, time_t * timeoutP);
 
@@ -285,7 +288,7 @@ lwm2m_observed_t * observe_findByUri(lwm2m_context_t * contextP, lwm2m_uri_t * u
 // defined in registration.c
 uint8_t registration_handleRequest(lwm2m_context_t * contextP, lwm2m_uri_t * uriP, void * fromSessionH, coap_packet_t * message, coap_packet_t * response);
 void registration_deregister(lwm2m_context_t * contextP, lwm2m_server_t * serverP);
-void registration_freeClient(lwm2m_client_t * clientP);
+void registration_freeClient(lwm2m_context_t * contextP, lwm2m_client_t * clientP);
 uint8_t registration_start(lwm2m_context_t * contextP);
 void registration_step(lwm2m_context_t * contextP, time_t currentTime, time_t * timeoutP);
 lwm2m_status_t registration_getStatus(lwm2m_context_t * contextP);

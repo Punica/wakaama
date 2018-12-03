@@ -126,6 +126,12 @@ static int prv_checkFinished(lwm2m_transaction_t * transacP,
         // response
         return transacP->ack_received ? 1 : 0;
     }
+
+    // Received message must be a response
+    if (receivedMessage->code < CREATED_2_01 - 1) {
+        return 0;
+    }
+
     if (!IS_OPTION(transactionMessage, COAP_OPTION_TOKEN))
     {
         // request without token
@@ -232,7 +238,7 @@ lwm2m_transaction_t * transaction_new(void * sessionH,
         }
     }
 
-    LOG_ARG("Exiting on success. new transac=%p", transacP);
+    LOG("Exiting on success");
     return transacP;
 
 error:
@@ -243,7 +249,7 @@ error:
 
 void transaction_free(lwm2m_transaction_t * transacP)
 {
-    LOG_ARG("Entering. transaction=%p", transacP);
+    LOG("Entering");
     if (transacP->message)
     {
        coap_free_header(transacP->message);
@@ -257,9 +263,30 @@ void transaction_free(lwm2m_transaction_t * transacP)
 void transaction_remove(lwm2m_context_t * contextP,
                         lwm2m_transaction_t * transacP)
 {
-    LOG_ARG("Entering. transaction=%p", transacP);
+    LOG("Entering");
     contextP->transactionList = (lwm2m_transaction_t *) LWM2M_LIST_RM(contextP->transactionList, transacP->mID, NULL);
     transaction_free(transacP);
+}
+
+void transaction_remove_all(lwm2m_context_t * contextP,
+                            void * sessionH)
+{
+    lwm2m_transaction_t * transacP;
+    lwm2m_transaction_t * nextP;
+
+    transacP = contextP->transactionList;
+    while (transacP != NULL)
+    {
+        nextP = transacP->next;
+
+        if (lwm2m_session_is_equal(sessionH, transacP->peerH, contextP->userData) == true)
+        {
+            transaction_remove(contextP, transacP);
+
+        }
+
+        transacP = nextP;
+    }
 }
 
 bool transaction_handleResponse(lwm2m_context_t * contextP,
@@ -348,7 +375,7 @@ int transaction_send(lwm2m_context_t * contextP,
 {
     bool maxRetriesReached = false;
 
-    LOG_ARG("Entering: transaction=%p", transacP);
+    LOG("Entering");
     if (transacP->buffer == NULL)
     {
         transacP->buffer_len = coap_serialize_get_size(transacP->message);
@@ -411,11 +438,10 @@ int transaction_send(lwm2m_context_t * contextP,
         }
     }
 
-    if (transacP->ack_received || maxRetriesReached)
+    if (maxRetriesReached)
     {
         if (transacP->callback)
         {
-            LOG_ARG("transaction %p expired..calling callback", transacP);
             transacP->callback(transacP, NULL);
         }
         transaction_remove(contextP, transacP);
