@@ -20,10 +20,17 @@ if(DTLS)
 		${TINYDTLS_SOURCES_DIR})
     
 	set(SHARED_DEFINITIONS -DWITH_TINYDTLS)
+elseif(MBEDTLS)
+    set(SHARED_SOURCES
+        ${SHARED_SOURCES}
+        ${SHARED_SOURCES_DIR}/mbedtlsconnection.c
+        ${SHARED_SOURCES_DIR}/mbedtlsfunctions.c)
+
+    set(SHARED_INCLUDE_DIRS ${SHARED_SOURCES_DIR})
 else()
     set(SHARED_SOURCES
-		${SHARED_SOURCES} 
-		${SHARED_SOURCES_DIR}/connection.c)
+        ${SHARED_SOURCES}
+        ${SHARED_SOURCES_DIR}/connection.c)
 
     set(SHARED_INCLUDE_DIRS ${SHARED_SOURCES_DIR})
 endif()
