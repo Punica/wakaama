@@ -1,22 +1,24 @@
-/*******************************************************************************
+/*
+ * Punica - LwM2M server with REST API
+ * Copyright (C) 2018 8devices
  *
- * Copyright (c) 2013, 2014 Intel Corporation and others.
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * and Eclipse Distribution License v1.0 which accompany this distribution.
+ * This program is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
  *
- * The Eclipse Public License is available at
- *    http://www.eclipse.org/legal/epl-v10.html
- * The Eclipse Distribution License is available at
- *    http://www.eclipse.org/org/documents/edl-v10.php.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU Affero General Public License for more details.
  *
- * Contributors:
- *    David Navarro, Intel Corporation - initial API and implementation
- *    
- *******************************************************************************/
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
 
-#ifndef CONNECTION_H_
-#define CONNECTION_H_
+#ifndef MBEDTLS_CONNECTION_H_
+#define MBEDTLS_CONNECTION_H_
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,43 +30,24 @@
 #include <netdb.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
-#include <liblwm2m.h>
-#include <mbedtls/config.h>
-#include <mbedtls/ssl.h>
-
-#include "mbedtls/net_sockets.h"
-#include "mbedtls/ssl.h"
-#include "mbedtls/entropy.h"
-#include "mbedtls/ctr_drbg.h"
-#include "mbedtls/certs.h"
-#include "mbedtls/x509.h"
-#include "mbedtls/error.h"
-#include "mbedtls/debug.h"
-#include "mbedtls/timing.h"
-
-#if !defined(_MSC_VER)
 #include <inttypes.h>
-#endif
-
-#if !defined(_WIN32)
 #include <signal.h>
-#endif
 
-#if defined(MBEDTLS_SSL_CACHE_C)
-#include "mbedtls/ssl_cache.h"
-#endif
+#include <mbedtls/config.h>
+#include <mbedtls/net_sockets.h>
+#include <mbedtls/ssl.h>
+#include <mbedtls/entropy.h>
+#include <mbedtls/ctr_drbg.h>
+#include <mbedtls/certs.h>
+#include <mbedtls/x509.h>
+#include <mbedtls/error.h>
+#include <mbedtls/debug.h>
+#include <mbedtls/timing.h>
+#include <mbedtls/ssl_cache.h>
+#include <mbedtls/ssl_ticket.h>
+#include <mbedtls/ssl_cookie.h>
 
-#if defined(MBEDTLS_SSL_TICKET_C)
-#include "mbedtls/ssl_ticket.h"
-#endif
-
-#if defined(MBEDTLS_SSL_COOKIE_C)
-#include "mbedtls/ssl_cookie.h"
-#endif
-
-#if defined(MBEDTLS_MEMORY_BUFFER_ALLOC_C)
-#include "mbedtls/memory_buffer_alloc.h"
-#endif
+#include <liblwm2m.h>
 
 #if defined(MBEDTLS_SSL_SERVER_NAME_INDICATION) && defined(MBEDTLS_FS_IO)
 #define SNI_OPTION
@@ -77,74 +60,22 @@
 #define LWM2M_BSSERVER_PORT_STR "5685"
 #define LWM2M_BSSERVER_PORT      5685
 
-#define mbedtls_free        free
-#define mbedtls_time        time
-#define mbedtls_time_t      time_t
-#define mbedtls_calloc      calloc
-#define mbedtls_fprintf     fprintf
-#define mbedtls_printf      printf
-
-#define ALPN_LIST_SIZE  10
 #define CURVE_LIST_SIZE 20
-
 #define MEMORY_HEAP_SIZE        120000
 
-#define DFL_SERVER_ADDR         "localhost"
-#define DFL_SERVER_PORT         "4433"
-#define DFL_RESPONSE_SIZE       -1
-#define DFL_DEBUG_LEVEL         0
-#define DFL_NBIO                0
-#define DFL_EVENT               0
-#define DFL_READ_TIMEOUT        0
-#define DFL_CA_FILE             ""
-#define DFL_CA_PATH             ""
-#define DFL_CRT_FILE            ""
-#define DFL_KEY_FILE            ""
-#define DFL_CRT_FILE2           ""
-#define DFL_KEY_FILE2           ""
-#define DFL_ASYNC_OPERATIONS    "-"
-#define DFL_ASYNC_PRIVATE_DELAY1 ( -1 )
-#define DFL_ASYNC_PRIVATE_DELAY2 ( -1 )
-#define DFL_ASYNC_PRIVATE_ERROR  ( 0 )
-#define DFL_PSK                 "ABC123"
-#define DFL_PSK_IDENTITY        "Client_identity"
-#define DFL_ECJPAKE_PW          NULL
-#define DFL_PSK_LIST            NULL
 #define DFL_FORCE_CIPHER        0
-#define DFL_VERSION_SUITES      NULL
-#define DFL_RENEGOTIATION       MBEDTLS_SSL_RENEGOTIATION_DISABLED
 #define DFL_ALLOW_LEGACY        -2
-#define DFL_RENEGOTIATE         0
 #define DFL_RENEGO_DELAY        -2
 #define DFL_RENEGO_PERIOD       ( (uint64_t)-1 )
-#define DFL_EXCHANGES           1
-#define DFL_MIN_VERSION         -1
-#define DFL_MAX_VERSION         -1
-#define DFL_ARC4                -1
-#define DFL_SHA1                -1
 #define DFL_AUTH_MODE           -1
 #define DFL_CERT_REQ_CA_LIST    MBEDTLS_SSL_CERT_REQ_CA_LIST_ENABLED
-#define DFL_MFL_CODE            MBEDTLS_SSL_MAX_FRAG_LEN_NONE
 #define DFL_TRUNC_HMAC          -1
-#define DFL_TICKETS             MBEDTLS_SSL_SESSION_TICKETS_ENABLED
-#define DFL_TICKET_TIMEOUT      86400
-#define DFL_CACHE_MAX           -1
-#define DFL_CACHE_TIMEOUT       -1
-#define DFL_SNI                 NULL
-#define DFL_ALPN_STRING         NULL
-#define DFL_CURVES              NULL
-#define DFL_DHM_FILE            NULL
-#define DFL_TRANSPORT           MBEDTLS_SSL_TRANSPORT_DATAGRAM
-#define DFL_COOKIES             1
 #define DFL_ANTI_REPLAY         -1
-#define DFL_HS_TO_MIN           0
-#define DFL_HS_TO_MAX           0
 #define DFL_DTLS_MTU            -1
 #define DFL_BADMAC_LIMIT        -1
 #define DFL_DGRAM_PACKING        1
 #define DFL_EXTENDED_MS         -1
 #define DFL_ETM                 -1
-#define DFL_IO_BUF_LEN          200
 
 #define PUT_UINT64_BE(out_be,in_le,i)                                   \
 {                                                                       \
@@ -158,7 +89,7 @@
     (out_be)[(i) + 7] = (unsigned char)( ( (in_le) >> 0  ) & 0xFF );    \
 }
 
-struct options
+struct mbedtls_options
 {
     const char *server_addr;    /* address on which the ssl service runs    */
     const char *server_port;    /* port on which the ssl service runs       */
@@ -216,7 +147,21 @@ struct options
     int dtls_mtu;               /* UDP Maximum tranport unit for DTLS       */
     int dgram_packing;          /* allow/forbid datagram packing            */
     int badmac_limit;           /* Limit of records with bad MAC            */
-} opt;
+};
+
+struct u_mbedtls_options
+{
+    const char *server_addr;
+    const char *server_port;
+    int debug_level;
+    const char *ca_file;
+    const char *ca_path;
+    const char *crt_file;
+    const char *key_file;
+    const char *psk;
+    const char *psk_identity;
+    char *psk_list;
+};
 
 #if defined(SNI_OPTION)
 typedef struct _sni_entry sni_entry;
@@ -254,24 +199,6 @@ struct _psk_entry
 };
 #endif /* MBEDTLS_KEY_EXCHANGE__SOME__PSK_ENABLED */
 
-#if defined(MBEDTLS_X509_CRT_PARSE_C)
-static int ssl_sig_hashes_for_test[] = {
-#if defined(MBEDTLS_SHA512_C)
-    MBEDTLS_MD_SHA512,
-    MBEDTLS_MD_SHA384,
-#endif
-#if defined(MBEDTLS_SHA256_C)
-    MBEDTLS_MD_SHA256,
-    MBEDTLS_MD_SHA224,
-#endif
-#if defined(MBEDTLS_SHA1_C)
-    /* Allow SHA-1 as we use it extensively in tests. */
-    MBEDTLS_MD_SHA1,
-#endif
-    MBEDTLS_MD_NONE
-};
-#endif /* MBEDTLS_X509_CRT_PARSE_C */
-
 void my_debug( void *ctx, int level, const char *file, int line, const char *str );
 int my_recv( void *ctx, unsigned char *buf, size_t len );
 int my_send( void *ctx, const unsigned char *buf, size_t len );
@@ -285,22 +212,28 @@ psk_entry *psk_parse( char *psk_string );
 int psk_callback( void *p_info, mbedtls_ssl_context *ssl, const unsigned char *name, size_t name_len );
 int mbedtls_status_is_ssl_in_progress( int ret );
 
-typedef struct _connection_t
+typedef struct _mbedtls_connection_t
 {
-    struct _connection_t *  next;
+    struct _mbedtls_connection_t *  next;
     mbedtls_net_context *   sock;
     mbedtls_ssl_context *   ssl;
-} connection_t;
+} mbedtls_connection_t;
 
-int create_socket(const char * portStr, int ai_family);
+int create_socket(struct u_mbedtls_options* options);
 
-int connection_receive(uint8_t* buffer, connection_t* con);
-connection_t * connection_find(connection_t * connList, struct sockaddr_storage * addr, size_t addrLen);
-connection_t * connection_new_incoming(void);
-connection_t * connection_create(connection_t * connList, int sock, char * host, char * port, int addressFamily);
+int connection_receive(uint8_t* buffer, mbedtls_connection_t* con);
+
+mbedtls_connection_t * connection_find(mbedtls_connection_t * connList, struct sockaddr_storage * addr, size_t addrLen);
+
+mbedtls_connection_t * connection_new_incoming(void);
+
+mbedtls_connection_t * connection_create(mbedtls_connection_t * connList, int sock, char * host, char * port, int addressFamily);
+
 int connection_select(uint32_t rw, uint32_t timeout);
 
-void connection_free(connection_t * connList);
+void connection_free(mbedtls_connection_t * connP);
+
+void mbedtls_step(lwm2m_context_t *lwm2m, time_t timeout);
 
 #endif
 
