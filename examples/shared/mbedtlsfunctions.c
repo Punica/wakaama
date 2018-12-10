@@ -1,10 +1,25 @@
+/*
+ * Punica - LwM2M server with REST API
+ * Copyright (C) 2018 8devices
+ *
+ * This program is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
 
 #include "mbedtlsconnection.h"
 
-
-void my_debug( void *ctx, int level,
-                      const char *file, int line,
-                      const char *str )
+void my_debug( void *ctx, int level, const char *file, int line, const char *str )
 {
     const char *p, *basename;
 
@@ -13,46 +28,8 @@ void my_debug( void *ctx, int level,
         if( *p == '/' || *p == '\\' )
             basename = p + 1;
 
-    mbedtls_fprintf( (FILE *) ctx, "%s:%04d: |%d| %s", basename, line, level, str );
+    fprintf( (FILE *) ctx, "%s:%04d: |%d| %s", basename, line, level, str );
     fflush(  (FILE *) ctx  );
-}
-
-/*
- * Test recv/send functions that make sure each try returns
- * WANT_READ/WANT_WRITE at least once before sucesseding
- */
-int my_recv( void *ctx, unsigned char *buf, size_t len )
-{
-    static int first_try = 1;
-    int ret;
-
-    if( first_try )
-    {
-        first_try = 0;
-        return( MBEDTLS_ERR_SSL_WANT_READ );
-    }
-
-    ret = mbedtls_net_recv( ctx, buf, len );
-    if( ret != MBEDTLS_ERR_SSL_WANT_READ )
-        first_try = 1; /* Next call will be a new operation */
-    return( ret );
-}
-
-int my_send( void *ctx, const unsigned char *buf, size_t len )
-{
-    static int first_try = 1;
-    int ret;
-
-    if( first_try )
-    {
-        first_try = 0;
-        return( MBEDTLS_ERR_SSL_WANT_WRITE );
-    }
-
-    ret = mbedtls_net_send( ctx, buf, len );
-    if( ret != MBEDTLS_ERR_SSL_WANT_WRITE )
-        first_try = 1; /* Next call will be a new operation */
-    return( ret );
 }
 
 /*
@@ -88,19 +65,19 @@ void sni_free( sni_entry *head )
     while( cur != NULL )
     {
         mbedtls_x509_crt_free( cur->cert );
-        mbedtls_free( cur->cert );
+        free( cur->cert );
 
         mbedtls_pk_free( cur->key );
-        mbedtls_free( cur->key );
+        free( cur->key );
 
         mbedtls_x509_crt_free( cur->ca );
-        mbedtls_free( cur->ca );
+        free( cur->ca );
 
         mbedtls_x509_crl_free( cur->crl );
-        mbedtls_free( cur->crl );
+        free( cur->crl );
 
         next = cur->next;
-        mbedtls_free( cur );
+        free( cur );
         cur = next;
     }
 }
@@ -125,7 +102,7 @@ sni_entry *sni_parse( char *sni_string )
 
     while( p <= end )
     {
-        if( ( new = mbedtls_calloc( 1, sizeof( sni_entry ) ) ) == NULL )
+        if( ( new = calloc( 1, sizeof( sni_entry ) ) ) == NULL )
         {
             sni_free( cur );
             return( NULL );
@@ -138,8 +115,8 @@ sni_entry *sni_parse( char *sni_string )
         GET_ITEM( crl_file );
         GET_ITEM( auth_str );
 
-        if( ( new->cert = mbedtls_calloc( 1, sizeof( mbedtls_x509_crt ) ) ) == NULL ||
-            ( new->key = mbedtls_calloc( 1, sizeof( mbedtls_pk_context ) ) ) == NULL )
+        if( ( new->cert = calloc( 1, sizeof( mbedtls_x509_crt ) ) ) == NULL ||
+            ( new->key = calloc( 1, sizeof( mbedtls_pk_context ) ) ) == NULL )
             goto error;
 
         mbedtls_x509_crt_init( new->cert );
@@ -151,7 +128,7 @@ sni_entry *sni_parse( char *sni_string )
 
         if( strcmp( ca_file, "-" ) != 0 )
         {
-            if( ( new->ca = mbedtls_calloc( 1, sizeof( mbedtls_x509_crt ) ) ) == NULL )
+            if( ( new->ca = calloc( 1, sizeof( mbedtls_x509_crt ) ) ) == NULL )
                 goto error;
 
             mbedtls_x509_crt_init( new->ca );
@@ -162,7 +139,7 @@ sni_entry *sni_parse( char *sni_string )
 
         if( strcmp( crl_file, "-" ) != 0 )
         {
-            if( ( new->crl = mbedtls_calloc( 1, sizeof( mbedtls_x509_crl ) ) ) == NULL )
+            if( ( new->crl = calloc( 1, sizeof( mbedtls_x509_crl ) ) ) == NULL )
                 goto error;
 
             mbedtls_x509_crl_init( new->crl );
@@ -260,7 +237,7 @@ void psk_free( psk_entry *head )
     while( head != NULL )
     {
         next = head->next;
-        mbedtls_free( head );
+        free( head );
         head = next;
     }
 }
@@ -284,7 +261,7 @@ psk_entry *psk_parse( char *psk_string )
 
     while( p <= end )
     {
-        if( ( new = mbedtls_calloc( 1, sizeof( psk_entry ) ) ) == NULL )
+        if( ( new = calloc( 1, sizeof( psk_entry ) ) ) == NULL )
             goto error;
 
         memset( new, 0, sizeof( psk_entry ) );

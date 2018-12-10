@@ -1,4 +1,21 @@
-// TODO add license
+/*
+ * Punica - LwM2M server with REST API
+ * Copyright (C) 2018 8devices
+ *
+ * This program is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
 
 #include <stdlib.h>
 #include <string.h>
@@ -6,7 +23,7 @@
 #include "mbedtlsconnection.h"
 #include <liblwm2m.h>
 
-static connection_t* connectionList = NULL;
+static mbedtls_connection_t* connectionList = NULL;
 
 mbedtls_net_context listen_fd;
 unsigned char* buf = 0;
@@ -21,9 +38,6 @@ size_t cliip_len;
 mbedtls_ssl_cookie_ctx cookie_ctx;
 #endif
 
-#if defined(MBEDTLS_X509_CRT_PARSE_C)
-mbedtls_x509_crt_profile crt_profile_for_test;
-#endif
 mbedtls_entropy_context entropy;
 mbedtls_ctr_drbg_context ctr_drbg;
 mbedtls_ssl_config conf;
@@ -58,23 +72,82 @@ sni_entry *sni_info = NULL;
 mbedtls_ecp_group_id curve_list[CURVE_LIST_SIZE];
 const mbedtls_ecp_curve_info * curve_cur;
 #endif
-#if defined(MBEDTLS_SSL_ALPN)
-const char *alpn_list[ALPN_LIST_SIZE];
-#endif
-#if defined(MBEDTLS_MEMORY_BUFFER_ALLOC_C)
-unsigned char alloc_buf[MEMORY_HEAP_SIZE];
-#endif
 
-static int prv_init_mbedtls(const char * portStr, int addressFamily)
+static struct mbedtls_options opt =
 {
-    (void)addressFamily;
+    .buffer_size         = 200,
+    .server_addr         = "",
+    .server_port         = "",
+    .debug_level         = 0,
+    .event               = 0,
+    .response_size       = -1,
+    .nbio                = 0,
+    .read_timeout        = 0,
+    .ca_file             = "",
+    .ca_path             = "",
+    .crt_file            = "",
+    .key_file            = "",
+    .crt_file2           = "",
+    .key_file2           = "",
+    .async_operations    = "-",
+    .async_private_delay1 = -1,
+    .async_private_delay2 = -1,
+    .async_private_error = 0,
+    .psk                 = "",
+    .psk_identity        = "",
+    .psk_list            = NULL,
+    .ecjpake_pw          = NULL,
+    .force_ciphersuite[0]= 0,
+    .version_suites      = NULL,
+    .renegotiation       = MBEDTLS_SSL_RENEGOTIATION_DISABLED,
+    .allow_legacy        = -2,
+    .renegotiate         = 0,
+    .renego_delay        = -2,
+    .renego_period       = ((uint64_t)-1),
+    .exchanges           = 1,
+    .min_version         = -1,
+    .max_version         = -1,
+    .arc4                = -1,
+    .allow_sha1          = -1,
+    .auth_mode           = -1,
+    .cert_req_ca_list    = MBEDTLS_SSL_CERT_REQ_CA_LIST_ENABLED,
+    .mfl_code            = MBEDTLS_SSL_MAX_FRAG_LEN_NONE,
+    .trunc_hmac          = -1,
+    .tickets             = MBEDTLS_SSL_SESSION_TICKETS_ENABLED,
+    .ticket_timeout      = 86400,
+    .cache_max           = 1,
+    .cache_timeout       = 1,
+    .alpn_string         = NULL,
+    .curves              = NULL,
+    .dhm_file            = NULL,
+    .transport           = MBEDTLS_SSL_TRANSPORT_DATAGRAM,
+    .cookies             = 1,
+    .anti_replay         = -1,
+    .hs_to_min           = 0,
+    .hs_to_max           = 0,
+    .dtls_mtu            = -1,
+    .dgram_packing       = 1,
+    .badmac_limit        = -1,
+    .extended_ms         = -1,
+    .etm                 = -1,
+};
 
-    crt_profile_for_test = mbedtls_x509_crt_profile_default;
-    int ret = 0, len, written, frags, exchanges_left;
-
+static int prv_init_mbedtls(struct u_mbedtls_options* options)
+{
+    int ret = 0;
     int i;
     char *p, *q;
-    const int *list;
+
+    opt.server_addr = options->server_addr;
+    opt.server_port = options->server_port;
+    opt.debug_level = options->debug_level;
+    opt.ca_file = options->ca_file;
+    opt.ca_path = options->ca_path;
+    opt.crt_file = options->crt_file;
+    opt.key_file = options->key_file;
+    opt.psk = options->psk;
+    opt.psk_identity = options->psk_identity;
+    opt.psk_list = options->psk_list;
 
     mbedtls_net_init( &listen_fd );
     mbedtls_ssl_config_init( &conf );
@@ -95,80 +168,14 @@ static int prv_init_mbedtls(const char * portStr, int addressFamily)
 #if defined(MBEDTLS_SSL_SESSION_TICKETS)
     mbedtls_ssl_ticket_init( &ticket_ctx );
 #endif
-#if defined(MBEDTLS_SSL_ALPN)
-    memset( (void *) alpn_list, 0, sizeof( alpn_list ) );
-#endif
 #if defined(MBEDTLS_SSL_COOKIE_C)
     mbedtls_ssl_cookie_init( &cookie_ctx );
 #endif
 
-    opt.buffer_size         = DFL_IO_BUF_LEN;
-    opt.server_addr         = DFL_SERVER_ADDR;
-    opt.server_port         = portStr;
-    opt.debug_level         = DFL_DEBUG_LEVEL;
-    opt.event               = DFL_EVENT;
-    opt.response_size       = DFL_RESPONSE_SIZE;
-    opt.nbio                = DFL_NBIO;
-    opt.read_timeout        = DFL_READ_TIMEOUT;
-    opt.ca_file             = DFL_CA_FILE;
-    opt.ca_path             = DFL_CA_PATH;
-    opt.crt_file            = DFL_CRT_FILE;
-    opt.key_file            = DFL_KEY_FILE;
-    opt.crt_file2           = DFL_CRT_FILE2;
-    opt.key_file2           = DFL_KEY_FILE2;
-    opt.async_operations    = DFL_ASYNC_OPERATIONS;
-    opt.async_private_delay1 = DFL_ASYNC_PRIVATE_DELAY1;
-    opt.async_private_delay2 = DFL_ASYNC_PRIVATE_DELAY2;
-    opt.async_private_error = DFL_ASYNC_PRIVATE_ERROR;
-    opt.psk                 = DFL_PSK;
-    opt.psk_identity        = DFL_PSK_IDENTITY;
-    opt.psk_list            = DFL_PSK_LIST;
-    opt.ecjpake_pw          = DFL_ECJPAKE_PW;
-    opt.force_ciphersuite[0]= DFL_FORCE_CIPHER;
-    opt.version_suites      = DFL_VERSION_SUITES;
-    opt.renegotiation       = DFL_RENEGOTIATION;
-    opt.allow_legacy        = DFL_ALLOW_LEGACY;
-    opt.renegotiate         = DFL_RENEGOTIATE;
-    opt.renego_delay        = DFL_RENEGO_DELAY;
-    opt.renego_period       = DFL_RENEGO_PERIOD;
-    opt.exchanges           = DFL_EXCHANGES;
-    opt.min_version         = DFL_MIN_VERSION;
-    opt.max_version         = DFL_MAX_VERSION;
-    opt.arc4                = DFL_ARC4;
-    opt.allow_sha1          = DFL_SHA1;
-    opt.auth_mode           = DFL_AUTH_MODE;
-    opt.cert_req_ca_list    = DFL_CERT_REQ_CA_LIST;
-    opt.mfl_code            = DFL_MFL_CODE;
-    opt.trunc_hmac          = DFL_TRUNC_HMAC;
-    opt.tickets             = DFL_TICKETS;
-    opt.ticket_timeout      = DFL_TICKET_TIMEOUT;
-    opt.cache_max           = DFL_CACHE_MAX;
-    opt.cache_timeout       = DFL_CACHE_TIMEOUT;
-    opt.sni                 = DFL_SNI;
-    opt.alpn_string         = DFL_ALPN_STRING;
-    opt.curves              = DFL_CURVES;
-    opt.dhm_file            = DFL_DHM_FILE;
-    opt.transport           = DFL_TRANSPORT;
-    opt.cookies             = DFL_COOKIES;
-    opt.anti_replay         = DFL_ANTI_REPLAY;
-    opt.hs_to_min           = DFL_HS_TO_MIN;
-    opt.hs_to_max           = DFL_HS_TO_MAX;
-    opt.dtls_mtu            = DFL_DTLS_MTU;
-    opt.dgram_packing       = DFL_DGRAM_PACKING;
-    opt.badmac_limit        = DFL_BADMAC_LIMIT;
-    opt.extended_ms         = DFL_EXTENDED_MS;
-    opt.etm                 = DFL_ETM;
-
-    if( opt.event == 1 && opt.nbio != 1 )
-    {
-        fprintf(stderr, "Warning: event-driven IO mandates nbio=1 - overwrite\n" );
-        opt.nbio = 1;
-    }
-
 #if defined(MBEDTLS_DEBUG_C)
     mbedtls_debug_set_threshold( opt.debug_level );
 #endif
-    buf = mbedtls_calloc( 1, opt.buffer_size + 1 );
+    buf = calloc( 1, opt.buffer_size + 1 );
     if( buf == NULL )
     {
         return -1;
@@ -239,26 +246,6 @@ static int prv_init_mbedtls(const char * portStr, int addressFamily)
         }
     }
 #endif /* MBEDTLS_ECP_C */
-
-#if defined(MBEDTLS_SSL_ALPN)
-    if( opt.alpn_string != NULL )
-    {
-        p = (char *) opt.alpn_string;
-        i = 0;
-
-        /* Leave room for a final NULL in alpn_list */
-        while( i < ALPN_LIST_SIZE - 1 && *p != '\0' )
-        {
-            alpn_list[i++] = p;
-
-            /* Terminate the current string and move on to next one */
-            while( *p != ',' && *p != '\0' )
-                p++;
-            if( *p == ',' )
-                *p++ = '\0';
-        }
-    }
-#endif /* MBEDTLS_SSL_ALPN */
 
     mbedtls_entropy_init( &entropy );
     if( ( ret = mbedtls_ctr_drbg_seed( &ctr_drbg, mbedtls_entropy_func,
@@ -417,7 +404,7 @@ static int prv_init_mbedtls(const char * portStr, int addressFamily)
             return -1;
         }
 
-        mbedtls_printf( " ok\n" );
+        printf( " ok\n" );
     }
 #endif /* SNI_OPTION */
 
@@ -438,33 +425,16 @@ static int prv_init_mbedtls(const char * portStr, int addressFamily)
         return -1;
     }
 
-#if defined(MBEDTLS_X509_CRT_PARSE_C)
-    /* The default algorithms profile disables SHA-1, but our tests still
-       rely on it heavily. Hence we allow it here. A real-world server
-       should use the default profile unless there is a good reason not to. */
-    if( opt.allow_sha1 > 0 )
-    {
-        crt_profile_for_test.allowed_mds |= MBEDTLS_X509_ID_FLAG( MBEDTLS_MD_SHA1 );
-        mbedtls_ssl_conf_cert_profile( &conf, &crt_profile_for_test );
-        mbedtls_ssl_conf_sig_hashes( &conf, ssl_sig_hashes_for_test );
-    }
-#endif /* MBEDTLS_X509_CRT_PARSE_C */
-
     if( opt.auth_mode != DFL_AUTH_MODE )
         mbedtls_ssl_conf_authmode( &conf, opt.auth_mode );
 
     if( opt.cert_req_ca_list != DFL_CERT_REQ_CA_LIST )
         mbedtls_ssl_conf_cert_req_ca_list( &conf, opt.cert_req_ca_list );
 
-#if defined(MBEDTLS_SSL_PROTO_DTLS)
-    if( opt.hs_to_min != DFL_HS_TO_MIN || opt.hs_to_max != DFL_HS_TO_MAX )
-        mbedtls_ssl_conf_handshake_timeout( &conf, opt.hs_to_min, opt.hs_to_max );
-#endif /* MBEDTLS_SSL_PROTO_DTLS */
-
 #if defined(MBEDTLS_SSL_MAX_FRAGMENT_LENGTH)
     if( ( ret = mbedtls_ssl_conf_max_frag_len( &conf, opt.mfl_code ) ) != 0 )
     {
-        mbedtls_printf( " failed\n  ! mbedtls_ssl_conf_max_frag_len returned %d\n\n", ret );
+        printf( " failed\n  ! mbedtls_ssl_conf_max_frag_len returned %d\n\n", ret );
         return -1;
     };
 #endif
@@ -482,15 +452,6 @@ static int prv_init_mbedtls(const char * portStr, int addressFamily)
 #if defined(MBEDTLS_SSL_ENCRYPT_THEN_MAC)
     if( opt.etm != DFL_ETM )
         mbedtls_ssl_conf_encrypt_then_mac( &conf, opt.etm );
-#endif
-
-#if defined(MBEDTLS_SSL_ALPN)
-    if( opt.alpn_string != NULL )
-        if( ( ret = mbedtls_ssl_conf_alpn_protocols( &conf, alpn_list ) ) != 0 )
-        {
-            fprintf(stderr, "mbedtls_ssl_conf_alpn_protocols returned %d\n\n", ret );
-            return -1;
-        }
 #endif
 
     mbedtls_ssl_conf_rng( &conf, mbedtls_ctr_drbg_random, &ctr_drbg );
@@ -570,27 +531,6 @@ static int prv_init_mbedtls(const char * portStr, int addressFamily)
 
     if( opt.force_ciphersuite[0] != DFL_FORCE_CIPHER )
         mbedtls_ssl_conf_ciphersuites( &conf, opt.force_ciphersuite );
-
-#if defined(MBEDTLS_ARC4_C)
-    if( opt.arc4 != DFL_ARC4 )
-        mbedtls_ssl_conf_arc4_support( &conf, opt.arc4 );
-#endif
-
-    if( opt.version_suites != NULL )
-    {
-        mbedtls_ssl_conf_ciphersuites_for_version( &conf, version_suites[0],
-                                          MBEDTLS_SSL_MAJOR_VERSION_3,
-                                          MBEDTLS_SSL_MINOR_VERSION_0 );
-        mbedtls_ssl_conf_ciphersuites_for_version( &conf, version_suites[1],
-                                          MBEDTLS_SSL_MAJOR_VERSION_3,
-                                          MBEDTLS_SSL_MINOR_VERSION_1 );
-        mbedtls_ssl_conf_ciphersuites_for_version( &conf, version_suites[2],
-                                          MBEDTLS_SSL_MAJOR_VERSION_3,
-                                          MBEDTLS_SSL_MINOR_VERSION_2 );
-        mbedtls_ssl_conf_ciphersuites_for_version( &conf, version_suites[3],
-                                          MBEDTLS_SSL_MAJOR_VERSION_3,
-                                          MBEDTLS_SSL_MINOR_VERSION_3 );
-    }
 
     if( opt.allow_legacy != DFL_ALLOW_LEGACY )
         mbedtls_ssl_conf_legacy_renegotiation( &conf, opt.allow_legacy );
@@ -679,16 +619,10 @@ static int prv_init_mbedtls(const char * portStr, int addressFamily)
     }
 #endif
 
-    if( opt.min_version != DFL_MIN_VERSION )
-        mbedtls_ssl_conf_min_version( &conf, MBEDTLS_SSL_MAJOR_VERSION_3, opt.min_version );
-
-    if( opt.max_version != DFL_MIN_VERSION )
-        mbedtls_ssl_conf_max_version( &conf, MBEDTLS_SSL_MAJOR_VERSION_3, opt.max_version );
-
     return 0;
 }
 
-static int prv_ssl_init(connection_t* connP)
+static int prv_ssl_init(mbedtls_connection_t* connP)
 {
     mbedtls_ssl_init(connP->ssl);
 #if defined(MBEDTLS_SSL_PROTO_DTLS)
@@ -696,10 +630,7 @@ static int prv_ssl_init(connection_t* connP)
         mbedtls_ssl_set_datagram_packing(connP->ssl, opt.dgram_packing);
 #endif /* MBEDTLS_SSL_PROTO_DTLS */
 
-    if(opt.nbio == 2)
-        mbedtls_ssl_set_bio(connP->ssl, connP->sock, my_send, my_recv, NULL);
-    else
-        mbedtls_ssl_set_bio(connP->ssl, connP->sock, mbedtls_net_send, mbedtls_net_recv, opt.nbio == 0 ? mbedtls_net_recv_timeout : NULL);
+    mbedtls_ssl_set_bio(connP->ssl, connP->sock, mbedtls_net_send, mbedtls_net_recv, mbedtls_net_recv_timeout);
 
 //    ret = mbedtls_ssl_setup(&connP->ssl, &conf);
     mbedtls_ssl_setup(connP->ssl, &conf);
@@ -717,38 +648,35 @@ static int prv_ssl_init(connection_t* connP)
     return 0;
 } 
 
-int create_socket(const char * portStr, int addressFamily)
+int create_socket(struct u_mbedtls_options* options)
 {
-    return prv_init_mbedtls(portStr, addressFamily);
+    return prv_init_mbedtls(options);
 }
 
 void mbedtls_step(lwm2m_context_t *lwm2m, time_t timeout)
 {
     int ret;
+    mbedtls_connection_t* connP_curr = connectionList;
 
-    if(connectionList != NULL)
+    while(connP_curr != NULL)
     {
-        connection_t* connP_curr = connectionList;
-
-        while(connP_curr != NULL)
+        ret = mbedtls_net_poll(connP_curr->sock, MBEDTLS_NET_POLL_READ, 0);
+        if(ret & MBEDTLS_NET_POLL_READ)
         {
-            ret = mbedtls_net_poll(connP_curr->sock, MBEDTLS_NET_POLL_READ, 0);
-            if(ret & MBEDTLS_NET_POLL_READ)
+            ret = mbedtls_ssl_read(connP_curr->ssl, buf, opt.buffer_size - 1);
+            if(ret > 0)
             {
-                ret = mbedtls_ssl_read(connP_curr->ssl, buf, opt.buffer_size - 1);
-                if(ret > 0)
-                {
-                    lwm2m_handle_packet(lwm2m, buf, ret, connP_curr);
-                }
+                lwm2m_handle_packet(lwm2m, buf, ret, connP_curr);
             }
-            connP_curr = connP_curr->next;
         }
+        connP_curr = connP_curr->next;
     }
 
+//  while polling listen_fd, client sockets are not processed
     ret = mbedtls_net_poll(&listen_fd, MBEDTLS_NET_POLL_READ, timeout * 1000);
     if(ret & MBEDTLS_NET_POLL_READ)
     {
-        connection_t* connP = connection_new_incoming();
+        mbedtls_connection_t* connP = connection_new_incoming();
         unsigned char client_ip[16] = { 0 };
         size_t cliip_len;
 
@@ -767,14 +695,18 @@ hello_verify:
         {
             lwm2m_handle_packet(lwm2m, buf, ret, connP);
         }
+        else
+        {
+            connection_free(connP);
+        }
     }
 }
 
-connection_t * connection_new_incoming(void)
+mbedtls_connection_t * connection_new_incoming(void)
 {
-    connection_t * connP;
+    mbedtls_connection_t * connP;
 
-    connP = (connection_t *)malloc(sizeof(connection_t));
+    connP = (mbedtls_connection_t *)malloc(sizeof(mbedtls_connection_t));
     if (connP != NULL)
     {
         connP->sock = (mbedtls_net_context*)malloc(sizeof(mbedtls_net_context));
@@ -790,17 +722,34 @@ connection_t * connection_new_incoming(void)
     return connP;
 }
 
-void connection_free(connection_t * connList)
+void connection_free(mbedtls_connection_t* connP)
 {
-    while (connList != NULL)
+    if(connP == connectionList)
     {
-        connection_t * nextP;
-
-        nextP = connList->next;
-        free(connList);
-
-        connList = nextP;
+        connectionList = NULL;
+        goto free;
     }
+
+    mbedtls_connection_t* connP_curr = connectionList;
+
+    do
+    {
+        if(connP_curr->next == connP)
+        {
+            connP_curr->next = connP->next;
+            goto free;
+        }
+    }
+    while (connP_curr->next != NULL);
+
+free:
+//  check if NULL to avoid double free?
+    mbedtls_ssl_close_notify(connP->ssl);
+    mbedtls_net_free(connP->sock);
+    free(connP->sock);
+    mbedtls_ssl_free(connP->ssl);
+    free(connP->ssl);
+    free(connP);
 }
 
 uint8_t lwm2m_buffer_send(void * sessionH,
@@ -808,7 +757,7 @@ uint8_t lwm2m_buffer_send(void * sessionH,
                           size_t length,
                           void * userdata)
 {
-    connection_t * connP = (connection_t*) sessionH;
+    mbedtls_connection_t * connP = (mbedtls_connection_t*) sessionH;
 
     if (connP == NULL)
     {
