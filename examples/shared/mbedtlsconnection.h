@@ -111,7 +111,7 @@ struct mbedtls_options
     int async_private_error;    /* inject error in async private callback */
     const char *psk;            /* the pre-shared key                       */
     const char *psk_identity;   /* the pre-shared key identity              */
-    char *psk_list;             /* list of PSK id/key pairs for callback    */
+    void *psk_list;             /* list of PSK id/key pairs for callback    */
     const char *ecjpake_pw;     /* the EC J-PAKE password                   */
     int force_ciphersuite[2];   /* protocol/ciphersuite to use, or all      */
     const char *version_suites; /* per-version ciphersuites                 */
@@ -160,7 +160,7 @@ struct u_mbedtls_options
     const char *key_file;
     const char *psk;
     const char *psk_identity;
-    char *psk_list;
+    void *psk_list;
 };
 
 #if defined(SNI_OPTION)

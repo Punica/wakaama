@@ -48,7 +48,7 @@ int get_auth_mode( const char *s )
 }
 
 /*
- * Used by sni_parse and psk_parse to handle coma-separated lists
+ * Used by sni_parse to handle coma-separated lists
  */
 #define GET_ITEM( dst )         \
     dst = p;                    \
@@ -225,85 +225,6 @@ int unhexify( unsigned char *output, const char *input, size_t *olen )
     }
 
     return( 0 );
-}
-
-/*
- * Free a list of psk_entry's
- */
-void psk_free( psk_entry *head )
-{
-    psk_entry *next;
-
-    while( head != NULL )
-    {
-        next = head->next;
-        free( head );
-        head = next;
-    }
-}
-
-/*
- * Parse a string of pairs name1,key1[,name2,key2[,...]]
- * into a usable psk_entry list.
- *
- * Modifies the input string! This is not production quality!
- */
-psk_entry *psk_parse( char *psk_string )
-{
-    psk_entry *cur = NULL, *new = NULL;
-    char *p = psk_string;
-    char *end = p;
-    char *key_hex;
-
-    while( *end != '\0' )
-        ++end;
-    *end = ',';
-
-    while( p <= end )
-    {
-        if( ( new = calloc( 1, sizeof( psk_entry ) ) ) == NULL )
-            goto error;
-
-        memset( new, 0, sizeof( psk_entry ) );
-
-        GET_ITEM( new->name );
-        GET_ITEM( key_hex );
-
-        if( unhexify( new->key, key_hex, &new->key_len ) != 0 )
-            goto error;
-
-        new->next = cur;
-        cur = new;
-    }
-
-    return( cur );
-
-error:
-    psk_free( new );
-    psk_free( cur );
-    return( 0 );
-}
-
-/*
- * PSK callback
- */
-int psk_callback( void *p_info, mbedtls_ssl_context *ssl,
-                  const unsigned char *name, size_t name_len )
-{
-    psk_entry *cur = (psk_entry *) p_info;
-
-    while( cur != NULL )
-    {
-        if( name_len == strlen( cur->name ) &&
-            memcmp( name, cur->name, name_len ) == 0 )
-        {
-            return( mbedtls_ssl_set_hs_psk( ssl, cur->key, cur->key_len ) );
-        }
-
-        cur = cur->next;
-    }
-
-    return( -1 );
 }
 #endif /* MBEDTLS_KEY_EXCHANGE__SOME__PSK_ENABLED */
 

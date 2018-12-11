@@ -30,7 +30,6 @@ unsigned char* buf = 0;
 int version_suites[4][2];
 unsigned char psk[MBEDTLS_PSK_MAX_LEN];
 size_t psk_len = 0;
-psk_entry *psk_info = NULL;
 const char *pers = "ssl_server2";
 unsigned char client_ip[16] = { 0 };
 size_t cliip_len;
@@ -184,14 +183,6 @@ static int prv_init_mbedtls(struct u_mbedtls_options* options)
     if( unhexify( psk, opt.psk, &psk_len ) != 0 )
     {
         return -1;
-    }
-
-    if( opt.psk_list != NULL )
-    {
-        if( ( psk_info = psk_parse( opt.psk_list ) ) == NULL )
-        {
-            return -1;
-        }
     }
 
 #if defined(MBEDTLS_ECP_C)
@@ -601,8 +592,7 @@ static int prv_init_mbedtls(struct u_mbedtls_options* options)
         }
     }
 
-    if( opt.psk_list != NULL )
-        mbedtls_ssl_conf_psk_cb( &conf, psk_callback, psk_info );
+    mbedtls_ssl_conf_psk_cb( &conf, psk_callback, opt.psk_list );
 
 #if defined(MBEDTLS_DHM_C)
     /*
