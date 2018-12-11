@@ -716,7 +716,7 @@ void connection_free(mbedtls_connection_t* connP)
 {
     if(connP == connectionList)
     {
-        connectionList = NULL;
+        connectionList = connP->next;
         goto free;
     }
 
@@ -729,6 +729,7 @@ void connection_free(mbedtls_connection_t* connP)
             connP_curr->next = connP->next;
             goto free;
         }
+        connP_curr = connP_curr->next;
     }
     while (connP_curr->next != NULL);
 
