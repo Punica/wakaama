@@ -399,8 +399,8 @@ static int prv_init_mbedtls(struct u_mbedtls_options* options)
     }
 #endif /* SNI_OPTION */
 
-    char *server_port_string;
-    snprintf(server_port_string, 6, "%d", opt.server_port);
+    char server_port_string[6];
+    snprintf(server_port_string, sizeof(server_port_string), "%d", opt.server_port);
 
     if( ( ret = mbedtls_net_bind( &listen_fd, opt.server_addr, server_port_string, MBEDTLS_NET_PROTO_UDP ) ) != 0 )
     {
