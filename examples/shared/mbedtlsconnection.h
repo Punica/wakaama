@@ -92,7 +92,7 @@
 struct mbedtls_options
 {
     const char *server_addr;    /* address on which the ssl service runs    */
-    const char *server_port;    /* port on which the ssl service runs       */
+    int server_port;            /* port on which the ssl service runs       */
     int debug_level;            /* level of debugging                       */
     int nbio;                   /* should I/O be blocking?                  */
     int event;                  /* loop or event-driven IO? level or edge triggered? */
@@ -111,7 +111,7 @@ struct mbedtls_options
     int async_private_error;    /* inject error in async private callback */
     const char *psk;            /* the pre-shared key                       */
     const char *psk_identity;   /* the pre-shared key identity              */
-    void *psk_list;             /* list of PSK id/key pairs for callback    */
+    void *psk_cont;             /* list of PSK id/key pairs for callback    */
     const char *ecjpake_pw;     /* the EC J-PAKE password                   */
     int force_ciphersuite[2];   /* protocol/ciphersuite to use, or all      */
     const char *version_suites; /* per-version ciphersuites                 */
@@ -152,7 +152,7 @@ struct mbedtls_options
 struct u_mbedtls_options
 {
     const char *server_addr;
-    const char *server_port;
+    int server_port;
     int debug_level;
     const char *ca_file;
     const char *ca_path;
@@ -160,7 +160,7 @@ struct u_mbedtls_options
     const char *key_file;
     const char *psk;
     const char *psk_identity;
-    void *psk_list;
+    void *psk_cont;
 };
 
 #if defined(SNI_OPTION)

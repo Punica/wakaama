@@ -76,7 +76,7 @@ static struct mbedtls_options opt =
 {
     .buffer_size         = 200,
     .server_addr         = "",
-    .server_port         = "",
+    .server_port         = 0,
     .debug_level         = 0,
     .event               = 0,
     .response_size       = -1,
@@ -94,7 +94,7 @@ static struct mbedtls_options opt =
     .async_private_error = 0,
     .psk                 = "",
     .psk_identity        = "",
-    .psk_list            = NULL,
+    .psk_cont            = NULL,
     .ecjpake_pw          = NULL,
     .force_ciphersuite[0]= 0,
     .version_suites      = NULL,
@@ -146,7 +146,7 @@ static int prv_init_mbedtls(struct u_mbedtls_options* options)
     opt.key_file = options->key_file;
     opt.psk = options->psk;
     opt.psk_identity = options->psk_identity;
-    opt.psk_list = options->psk_list;
+    opt.psk_cont = options->psk_cont;
 
     mbedtls_net_init( &listen_fd );
     mbedtls_ssl_config_init( &conf );
@@ -399,9 +399,10 @@ static int prv_init_mbedtls(struct u_mbedtls_options* options)
     }
 #endif /* SNI_OPTION */
 
-    printf("Bind on udp://%s:%s/\r\n", opt.server_addr, opt.server_port);
+    char *server_port_string;
+    snprintf(server_port_string, 6, "%d", opt.server_port);
 
-    if( ( ret = mbedtls_net_bind( &listen_fd, opt.server_addr, opt.server_port, MBEDTLS_NET_PROTO_UDP ) ) != 0 )
+    if( ( ret = mbedtls_net_bind( &listen_fd, opt.server_addr, server_port_string, MBEDTLS_NET_PROTO_UDP ) ) != 0 )
     {
         fprintf(stderr, "mbedtls_net_bind returned -0x%x\n\n", -ret );
         return -1;
@@ -592,7 +593,7 @@ static int prv_init_mbedtls(struct u_mbedtls_options* options)
         }
     }
 
-    mbedtls_ssl_conf_psk_cb( &conf, psk_callback, opt.psk_list );
+    mbedtls_ssl_conf_psk_cb( &conf, psk_callback, opt.psk_cont );
 
 #if defined(MBEDTLS_DHM_C)
     /*
