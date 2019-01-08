@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <sys/select.h>
+
 #include "mbedtlsconnection.h"
 #include <liblwm2m.h>
 
@@ -644,15 +646,46 @@ int create_socket(struct u_mbedtls_options* options)
     return prv_init_mbedtls(options);
 }
 
-void mbedtls_step(lwm2m_context_t *lwm2m, time_t timeout)
+void mbedtls_step(lwm2m_context_t *lwm2m, struct timeval *tv)
 {
-    int ret;
+    int ret, nfds = 0;
+    fd_set read_fds;
     mbedtls_connection_t* connP_curr = connectionList;
+
+    FD_ZERO(&read_fds);
 
     while(connP_curr != NULL)
     {
-        ret = mbedtls_net_poll(connP_curr->sock, MBEDTLS_NET_POLL_READ, 0);
-        if(ret & MBEDTLS_NET_POLL_READ)
+        FD_SET(connP_curr->sock->fd, &read_fds);
+        if(connP_curr->sock->fd >= nfds)
+        {
+            nfds = connP_curr->sock->fd + 1;
+        }
+        connP_curr = connP_curr->next;
+    }
+
+    FD_SET(listen_fd.fd, &read_fds);
+    if(listen_fd.fd >= nfds)
+    {
+        nfds = listen_fd.fd + 1;
+    }
+
+    ret = select(nfds, &read_fds, NULL, NULL, tv);
+    if(ret < 0)
+    {
+        //errno
+        return;
+    }
+    else if(ret == 0)
+    {
+        //keep this in case we want to manage return < 0 error
+        return;
+    }
+
+    connP_curr = connectionList;
+    while(connP_curr != NULL)
+    {
+        if(FD_ISSET(connP_curr->sock->fd, &read_fds))
         {
             ret = mbedtls_ssl_read(connP_curr->ssl, buf, opt.buffer_size - 1);
             if(ret > 0)
@@ -663,9 +696,7 @@ void mbedtls_step(lwm2m_context_t *lwm2m, time_t timeout)
         connP_curr = connP_curr->next;
     }
 
-//  while polling listen_fd, client sockets are not processed
-    ret = mbedtls_net_poll(&listen_fd, MBEDTLS_NET_POLL_READ, timeout * 1000);
-    if(ret & MBEDTLS_NET_POLL_READ)
+    if(FD_ISSET(listen_fd.fd, &read_fds))
     {
         mbedtls_connection_t* connP = connection_new_incoming();
         unsigned char client_ip[16] = { 0 };

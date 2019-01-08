@@ -233,7 +233,7 @@ int connection_select(uint32_t rw, uint32_t timeout);
 
 void connection_free(mbedtls_connection_t * connP);
 
-void mbedtls_step(lwm2m_context_t *lwm2m, time_t timeout);
+void mbedtls_step(lwm2m_context_t *lwm2m, struct timeval *tv);
 
 #endif
 
