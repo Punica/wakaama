@@ -76,7 +76,7 @@ const mbedtls_ecp_curve_info * curve_cur;
 
 static struct mbedtls_options opt =
 {
-    .buffer_size         = 200,
+    .buffer_size         = 1024,
     .server_addr         = "",
     .server_port         = 0,
     .debug_level         = 0,
