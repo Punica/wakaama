@@ -100,14 +100,10 @@ struct mbedtls_options
     int response_size;          /* pad response with header to requested size */
     uint16_t buffer_size;       /* IO buffer size */
     const char *ca_file;        /* the file with the CA certificate(s)      */
-    const char *ca_path;        /* the path with the CA certificate(s) reside */
     const char *crt_file;       /* the file with the server certificate     */
     const char *key_file;       /* the file with the server key             */
-    const char *crt_file2;      /* the file with the 2nd server certificate */
-    const char *key_file2;      /* the file with the 2nd server key         */
     const char *async_operations; /* supported SSL asynchronous operations  */
     int async_private_delay1;   /* number of times f_async_resume needs to be called for key 1, or -1 for no async */
-    int async_private_delay2;   /* number of times f_async_resume needs to be called for key 2, or -1 for no async */
     int async_private_error;    /* inject error in async private callback */
     const char *psk;            /* the pre-shared key                       */
     const char *psk_identity;   /* the pre-shared key identity              */
@@ -154,8 +150,8 @@ struct u_mbedtls_options
     const char *server_addr;
     int server_port;
     int debug_level;
+    int auth_mode;
     const char *ca_file;
-    const char *ca_path;
     const char *crt_file;
     const char *key_file;
     const char *psk;

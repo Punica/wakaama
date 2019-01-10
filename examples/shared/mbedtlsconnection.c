@@ -53,9 +53,7 @@ uint32_t flags;
 mbedtls_x509_crt cacert;
 mbedtls_x509_crt srvcert;
 mbedtls_pk_context pkey;
-mbedtls_x509_crt srvcert2;
-mbedtls_pk_context pkey2;
-int key_cert_init = 0, key_cert_init2 = 0;
+int key_cert_init = 0;
 #endif /* MBEDTLS_X509_CRT_PARSE_C */
 #if defined(MBEDTLS_DHM_C) && defined(MBEDTLS_FS_IO)
 mbedtls_dhm_context dhm;
@@ -85,14 +83,10 @@ static struct mbedtls_options opt =
     .nbio                = 0,
     .read_timeout        = 0,
     .ca_file             = "",
-    .ca_path             = "",
     .crt_file            = "",
     .key_file            = "",
-    .crt_file2           = "",
-    .key_file2           = "",
     .async_operations    = "-",
     .async_private_delay1 = -1,
-    .async_private_delay2 = -1,
     .async_private_error = 0,
     .psk                 = "",
     .psk_identity        = "",
@@ -119,7 +113,7 @@ static struct mbedtls_options opt =
     .cache_max           = 1,
     .cache_timeout       = 1,
     .alpn_string         = NULL,
-    .curves              = NULL,
+    .curves              = "secp256r1",
     .dhm_file            = NULL,
     .transport           = MBEDTLS_SSL_TRANSPORT_DATAGRAM,
     .cookies             = 1,
@@ -142,8 +136,8 @@ static int prv_init_mbedtls(struct u_mbedtls_options* options)
     opt.server_addr = options->server_addr;
     opt.server_port = options->server_port;
     opt.debug_level = options->debug_level;
+    opt.auth_mode = options->auth_mode;
     opt.ca_file = options->ca_file;
-    opt.ca_path = options->ca_path;
     opt.crt_file = options->crt_file;
     opt.key_file = options->key_file;
     opt.psk = options->psk;
@@ -157,8 +151,6 @@ static int prv_init_mbedtls(struct u_mbedtls_options* options)
     mbedtls_x509_crt_init( &cacert );
     mbedtls_x509_crt_init( &srvcert );
     mbedtls_pk_init( &pkey );
-    mbedtls_x509_crt_init( &srvcert2 );
-    mbedtls_pk_init( &pkey2 );
 #endif
 #if defined(MBEDTLS_DHM_C) && defined(MBEDTLS_FS_IO)
     mbedtls_dhm_init( &dhm );
@@ -250,16 +242,10 @@ static int prv_init_mbedtls(struct u_mbedtls_options* options)
 
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
 #if defined(MBEDTLS_FS_IO)
-    if( strlen( opt.ca_path ) )
-        if( strcmp( opt.ca_path, "none" ) == 0 )
-            ret = 0;
-        else
-            ret = mbedtls_x509_crt_parse_path( &cacert, opt.ca_path );
-    else if( strlen( opt.ca_file ) )
-        if( strcmp( opt.ca_file, "none" ) == 0 )
-            ret = 0;
-        else
-            ret = mbedtls_x509_crt_parse_file( &cacert, opt.ca_file );
+    if(opt.ca_file)
+    {
+        ret = mbedtls_x509_crt_parse_file(&cacert, opt.ca_file);
+    }
     else
 #endif
 #if defined(MBEDTLS_CERTS_C)
@@ -278,19 +264,19 @@ static int prv_init_mbedtls(struct u_mbedtls_options* options)
     }
 
 #if defined(MBEDTLS_FS_IO)
-    if( strlen( opt.crt_file ) && strcmp( opt.crt_file, "none" ) != 0 )
+    if(opt.crt_file)
     {
         key_cert_init++;
-        if( ( ret = mbedtls_x509_crt_parse_file( &srvcert, opt.crt_file ) ) != 0 )
+        if( ( ret = mbedtls_x509_crt_parse_file(&srvcert, opt.crt_file) ) != 0 )
         {
             fprintf(stderr, "mbedtls_x509_crt_parse_file returned -0x%x\n\n", -ret);
             return -1;
         }
     }
-    if( strlen( opt.key_file ) && strcmp( opt.key_file, "none" ) != 0 )
+    if(opt.key_file)
     {
         key_cert_init++;
-        if( ( ret = mbedtls_pk_parse_keyfile( &pkey, opt.key_file, "" ) ) != 0 )
+        if( (ret = mbedtls_pk_parse_keyfile(&pkey, opt.key_file, "") ) != 0 )
         {
             fprintf(stderr, "mbedtls_pk_parse_keyfile returned -0x%x\n\n", -ret );
             return -1;
@@ -301,79 +287,7 @@ static int prv_init_mbedtls(struct u_mbedtls_options* options)
         fprintf(stderr, "crt_file without key_file or vice-versa\n\n" );
         return -1;
     }
-
-    if( strlen( opt.crt_file2 ) && strcmp( opt.crt_file2, "none" ) != 0 )
-    {
-        key_cert_init2++;
-        if( ( ret = mbedtls_x509_crt_parse_file( &srvcert2, opt.crt_file2 ) ) != 0 )
-        {
-            fprintf(stderr, "mbedtls_x509_crt_parse_file(2) returned -0x%x\n\n",
-                    -ret );
-            return -1;
-        }
-    }
-    if( strlen( opt.key_file2 ) && strcmp( opt.key_file2, "none" ) != 0 )
-    {
-        key_cert_init2++;
-        if( ( ret = mbedtls_pk_parse_keyfile( &pkey2, opt.key_file2, "" ) ) != 0 )
-        {
-            fprintf(stderr, "mbedtls_pk_parse_keyfile(2) returned -0x%x\n\n",
-                            -ret );
-            return -1;
-        }
-    }
-    if( key_cert_init2 == 1 )
-    {
-        fprintf(stderr, "crt_file2 without key_file2 or vice-versa\n\n" );
-        return -1;
-    }
 #endif
-    if( key_cert_init == 0 &&
-        strcmp( opt.crt_file, "none" ) != 0 &&
-        strcmp( opt.key_file, "none" ) != 0 &&
-        key_cert_init2 == 0 &&
-        strcmp( opt.crt_file2, "none" ) != 0 &&
-        strcmp( opt.key_file2, "none" ) != 0 )
-    {
-#if defined(MBEDTLS_RSA_C)
-        if( ( ret = mbedtls_x509_crt_parse( &srvcert,
-                                    (const unsigned char *) mbedtls_test_srv_crt_rsa,
-                                    mbedtls_test_srv_crt_rsa_len ) ) != 0 )
-        {
-            fprintf(stderr, "mbedtls_x509_crt_parse returned -0x%x\n\n",
-                            -ret );
-            return -1;
-        }
-        if( ( ret = mbedtls_pk_parse_key( &pkey,
-                                  (const unsigned char *) mbedtls_test_srv_key_rsa,
-                                  mbedtls_test_srv_key_rsa_len, NULL, 0 ) ) != 0 )
-        {
-            fprintf(stderr, "mbedtls_pk_parse_key returned -0x%x\n\n",
-                            -ret );
-            return -1;
-        }
-        key_cert_init = 2;
-#endif /* MBEDTLS_RSA_C */
-#if defined(MBEDTLS_ECDSA_C)
-        if( ( ret = mbedtls_x509_crt_parse( &srvcert2,
-                                    (const unsigned char *) mbedtls_test_srv_crt_ec,
-                                    mbedtls_test_srv_crt_ec_len ) ) != 0 )
-        {
-            fprintf(stderr, "x509_crt_parse2 returned -0x%x\n\n",
-                            -ret );
-            return -1;
-        }
-        if( ( ret = mbedtls_pk_parse_key( &pkey2,
-                                  (const unsigned char *) mbedtls_test_srv_key_ec,
-                                  mbedtls_test_srv_key_ec_len, NULL, 0 ) ) != 0 )
-        {
-            fprintf(stderr, "pk_parse_key2 returned -0x%x\n\n",
-                            -ret );
-            return -1;
-        }
-        key_cert_init2 = 2;
-#endif /* MBEDTLS_ECDSA_C */
-    }
 #endif /* MBEDTLS_X509_CRT_PARSE_C */
 
 #if defined(MBEDTLS_DHM_C) && defined(MBEDTLS_FS_IO)
@@ -419,8 +333,10 @@ static int prv_init_mbedtls(struct u_mbedtls_options* options)
         return -1;
     }
 
-    if( opt.auth_mode != DFL_AUTH_MODE )
-        mbedtls_ssl_conf_authmode( &conf, opt.auth_mode );
+    if(opt.auth_mode)
+    {
+        mbedtls_ssl_conf_authmode(&conf, MBEDTLS_SSL_VERIFY_REQUIRED);
+    }
 
     if( opt.cert_req_ca_list != DFL_CERT_REQ_CA_LIST )
         mbedtls_ssl_conf_cert_req_ca_list( &conf, opt.cert_req_ca_list );
@@ -542,24 +458,14 @@ static int prv_init_mbedtls(struct u_mbedtls_options* options)
 #endif
 
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
-    if( strcmp( opt.ca_path, "none" ) != 0 &&
-        strcmp( opt.ca_file, "none" ) != 0 )
+    if(opt.ca_file)
     {
-        mbedtls_ssl_conf_ca_chain( &conf, &cacert, NULL );
+        mbedtls_ssl_conf_ca_chain(&conf, &cacert, NULL);
     }
     if( key_cert_init )
     {
         mbedtls_pk_context *pk = &pkey;
         if( ( ret = mbedtls_ssl_conf_own_cert( &conf, &srvcert, pk ) ) != 0 )
-        {
-            fprintf(stderr, "mbedtls_ssl_conf_own_cert returned %d\n\n", ret );
-            return -1;
-        }
-    }
-    if( key_cert_init2 )
-    {
-        mbedtls_pk_context *pk = &pkey2;
-        if( ( ret = mbedtls_ssl_conf_own_cert( &conf, &srvcert2, pk ) ) != 0 )
         {
             fprintf(stderr, "mbedtls_ssl_conf_own_cert returned %d\n\n", ret );
             return -1;
