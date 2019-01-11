@@ -55,6 +55,8 @@
 */
 
 #include "internals.h"
+#include "mbedtlsconnection.h"
+#include "mbedtls/oid.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -1048,6 +1050,43 @@ static int prv_getLocationString(uint16_t id,
     return index;
 }
 
+static int prv_authClientName(char * name,
+                              void * fromSessionH)
+{
+    mbedtls_connection_t * conn = (mbedtls_connection_t *)fromSessionH;
+    const char * short_name;
+    int ret;
+
+    //check if using cipher with certificate
+    if ((conn->ssl->session->ciphersuite != MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8) && (conn->ssl->session->ciphersuite != MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256))
+    {
+        return 0;
+    }
+
+    mbedtls_x509_name * subject = &conn->ssl->session->peer_cert->subject;
+    while (subject != NULL)
+    {
+        ret = mbedtls_oid_get_attr_short_name(&subject->oid, &short_name);
+
+        if (ret == 0)
+        {
+            if (strcmp(short_name, "CN") == 0)
+            {
+                if (strncmp(subject->val.p, name, subject->val.len) == 0)
+                {
+                    return 0;
+                }
+
+                return COAP_400_BAD_REQUEST;
+            }
+        }
+
+        subject = subject->next;
+    }
+
+    return COAP_500_INTERNAL_SERVER_ERROR;
+}
+
 uint8_t registration_handleRequest(lwm2m_context_t * contextP,
                                    lwm2m_uri_t * uriP,
                                    void * fromSessionH,
@@ -1126,6 +1165,13 @@ uint8_t registration_handleRequest(lwm2m_context_t * contextP,
                 return COAP_412_PRECONDITION_FAILED;
             }
             lwm2m_free(version);
+
+            if ((result = prv_authClientName(name, fromSessionH)) != 0)
+            {
+                lwm2m_free(name);
+                if (msisdn != NULL) lwm2m_free(msisdn);
+                return result;
+            }
 
             if (lifetime == 0)
             {
