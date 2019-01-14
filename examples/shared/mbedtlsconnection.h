@@ -130,7 +130,6 @@ struct mbedtls_options
     int cache_max;              /* max number of session cache entries      */
     int cache_timeout;          /* expiration delay of session cache entries */
     char *sni;                  /* string describing sni information        */
-    const char *curves;         /* list of supported elliptic curves        */
     const char *alpn_string;    /* ALPN supported protocols                 */
     const char *dhm_file;       /* the file with the DH parameters          */
     int extended_ms;            /* allow negotiation of extended MS?        */

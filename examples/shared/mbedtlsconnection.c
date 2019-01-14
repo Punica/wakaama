@@ -113,7 +113,6 @@ static struct mbedtls_options opt =
     .cache_max           = 1,
     .cache_timeout       = 1,
     .alpn_string         = NULL,
-    .curves              = "secp256r1",
     .dhm_file            = NULL,
     .transport           = MBEDTLS_SSL_TRANSPORT_DATAGRAM,
     .cookies             = 1,
@@ -178,59 +177,6 @@ static int prv_init_mbedtls(struct u_mbedtls_options* options)
     {
         return -1;
     }
-
-#if defined(MBEDTLS_ECP_C)
-    if( opt.curves != NULL )
-    {
-        p = (char *) opt.curves;
-        i = 0;
-
-        if( strcmp( p, "none" ) == 0 )
-        {
-            curve_list[0] = MBEDTLS_ECP_DP_NONE;
-        }
-        else if( strcmp( p, "default" ) != 0 )
-        {
-            /* Leave room for a final NULL in curve list */
-            while( i < CURVE_LIST_SIZE - 1 && *p != '\0' )
-            {
-                q = p;
-
-                /* Terminate the current string */
-                while( *p != ',' && *p != '\0' )
-                    p++;
-                if( *p == ',' )
-                    *p++ = '\0';
-
-                if( ( curve_cur = mbedtls_ecp_curve_info_from_name( q ) ) != NULL )
-                {
-                    curve_list[i++] = curve_cur->grp_id;
-                }
-                else
-                {
-                    fprintf(stderr, "unknown curve %s\n", q );
-                    fprintf(stderr, "supported curves: " );
-                    for( curve_cur = mbedtls_ecp_curve_list();
-                         curve_cur->grp_id != MBEDTLS_ECP_DP_NONE;
-                         curve_cur++ )
-                    {
-                        fprintf(stderr, "%s ", curve_cur->name );
-                    }
-                    fprintf(stderr, "\n" );
-                    return -1;
-                }
-            }
-
-            if( i == CURVE_LIST_SIZE - 1 && *p != '\0' )
-            {
-                fprintf(stderr, "curves list too long, maximum %d", CURVE_LIST_SIZE - 1);
-                return -1;
-            }
-
-            curve_list[i] = MBEDTLS_ECP_DP_NONE;
-        }
-    }
-#endif /* MBEDTLS_ECP_C */
 
     mbedtls_entropy_init( &entropy );
     if( ( ret = mbedtls_ctr_drbg_seed( &ctr_drbg, mbedtls_entropy_func,
@@ -482,11 +428,9 @@ static int prv_init_mbedtls(struct u_mbedtls_options* options)
 #endif
 
 #if defined(MBEDTLS_ECP_C)
-    if( opt.curves != NULL &&
-        strcmp( opt.curves, "default" ) != 0 )
-    {
-        mbedtls_ssl_conf_curves( &conf, curve_list );
-    }
+    curve_list[0] = MBEDTLS_ECP_DP_SECP256R1;
+    curve_list[1] = MBEDTLS_ECP_DP_NONE;
+    mbedtls_ssl_conf_curves(&conf, curve_list);
 #endif
 
     if( strlen( opt.psk ) != 0 && strlen( opt.psk_identity ) != 0 )
