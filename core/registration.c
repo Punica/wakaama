@@ -1103,10 +1103,18 @@ uint8_t registration_handleRequest(lwm2m_context_t * contextP,
                 if (msisdn != NULL) lwm2m_free(msisdn);
                 return COAP_400_BAD_REQUEST;
             }
-            // Endpoint client name is mandatory, and must match identifier used during SSL handshake (if used)
-            if (name == NULL && !lwm2m_client_validate(name, fromSessionH))
+            // Endpoint client name is mandatory
+            if (name == NULL)
             {
                 lwm2m_free(version);
+                if (msisdn != NULL) lwm2m_free(msisdn);
+                return COAP_400_BAD_REQUEST;
+            }
+            // Client name must match indentifier used during SSL handshake (if used)
+            if (lwm2m_client_validate(name, fromSessionH))
+            {
+                lwm2m_free(version);
+                lwm2m_free(name);
                 if (msisdn != NULL) lwm2m_free(msisdn);
                 return COAP_400_BAD_REQUEST;
             }
