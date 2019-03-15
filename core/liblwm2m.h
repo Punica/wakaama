@@ -135,6 +135,12 @@ uint8_t lwm2m_buffer_send(void * sessionH, uint8_t * buffer, size_t length, void
 // Returns true if the two sessions identify the same peer. false otherwise.
 // userData: parameter to lwm2m_init()
 bool lwm2m_session_is_equal(void * session1, void * session2, void * userData);
+// Validate new client registration with lower communication layers
+// Returns 0 if 'name' can be maped to provided session 'fromSessionH'
+// name: client name
+// fromSessionH: lower layer communication session
+// userData: parameter to lwm2m_init()
+int lwm2m_client_validate(char * name, void * fromSessionH, void *userData);
 
 /*
  * Error code

@@ -62,8 +62,6 @@
 
 #define MAX_LOCATION_LENGTH 10      // strlen("/rd/65534") + 1
 
-int lwm2m_client_validate(char * name, void * fromSessionH);
-
 #ifdef LWM2M_CLIENT_MODE
 
 static int prv_getRegistrationQueryLength(lwm2m_context_t * contextP,
@@ -1111,7 +1109,7 @@ uint8_t registration_handleRequest(lwm2m_context_t * contextP,
                 return COAP_400_BAD_REQUEST;
             }
             // Client name must match indentifier used during SSL handshake (if used)
-            if (result = lwm2m_client_validate(name, fromSessionH))
+            if (result = lwm2m_client_validate(name, fromSessionH, contextP->userData))
             {
                 lwm2m_free(version);
                 lwm2m_free(name);
