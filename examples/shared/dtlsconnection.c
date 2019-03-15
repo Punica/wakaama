@@ -639,3 +639,10 @@ bool lwm2m_session_is_equal(void * session1,
 {
     return (session1 == session2);
 }
+
+bool lwm2m_name_is_valid(const char * name,
+                         void * fromSessionH,
+                         void * userData)
+{
+    return true;
+}
