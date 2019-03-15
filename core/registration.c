@@ -1109,12 +1109,12 @@ uint8_t registration_handleRequest(lwm2m_context_t * contextP,
                 return COAP_400_BAD_REQUEST;
             }
             // Client name must match indentifier used during SSL handshake (if used)
-            if (result = lwm2m_client_validate(name, fromSessionH, contextP->userData))
+            if (!lwm2m_name_is_valid(name, fromSessionH, contextP->userData))
             {
                 lwm2m_free(version);
                 lwm2m_free(name);
                 if (msisdn != NULL) lwm2m_free(msisdn);
-                return result;
+                return COAP_400_BAD_REQUEST;
             }
             // Object list is mandatory
             if (objects == NULL)

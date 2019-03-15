@@ -136,11 +136,11 @@ uint8_t lwm2m_buffer_send(void * sessionH, uint8_t * buffer, size_t length, void
 // userData: parameter to lwm2m_init()
 bool lwm2m_session_is_equal(void * session1, void * session2, void * userData);
 // Validate new client registration with lower communication layers
-// Returns 0 if 'name' can be maped to provided session 'fromSessionH'
+// Returns true if 'name' can be maped to provided session 'fromSessionH'. false otherwise
 // name: client name
 // fromSessionH: lower layer communication session
 // userData: parameter to lwm2m_init()
-int lwm2m_client_validate(char * name, void * fromSessionH, void *userData);
+bool lwm2m_name_is_valid(const char * name, void * fromSessionH, void * userData);
 
 /*
  * Error code
