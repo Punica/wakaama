@@ -1,0 +1,51 @@
+#!/bin/sh
+
+set -e
+
+PROJECT_ROOT_DIR="$(cd $(dirname "$0")/.. && pwd -P)"
+
+update_repositories () {
+    if which apt-get; then
+        sudo apt-get update -qq
+    elif which rpm; then
+        echo "RPM is not supported yet!"
+        return 1
+    elif which opkg; then
+        echo "OPKG is not supported yet!"
+        return 1
+    elif which brew; then
+        echo "BREW is not supported yet!"
+        return 1
+    else
+        echo "Unknown package manager! (not supported yet)"
+        return 1
+    fi
+
+    return 0
+}
+
+install_build_tools () {
+    if which apt-get; then
+        sudo apt-get install -yqq cmake build-essential
+    elif which rpm; then
+        echo "RPM is not supported yet!"
+        return 1
+    elif which opkg; then
+        echo "OPKG is not supported yet!"
+        return 1
+    elif which brew; then
+        echo "BREW is not supported yet!"
+        return 1
+    else
+        echo "Unknown package manager! (not supported yet)"
+        return 1
+    fi
+
+    return $?
+}
+
+echo "==> Updating package lists..."
+update_repositories
+
+echo "==> Installing building tools..."
+install_build_tools

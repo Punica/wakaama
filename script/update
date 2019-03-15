@@ -1,0 +1,13 @@
+#!/bin/sh
+
+set -e
+
+PROJECT_ROOT_DIR="$(cd $(dirname "$0")/.. && pwd -P)"
+SCRIPTS_DIR="${PROJECT_ROOT_DIR}/script"
+
+eval "${SCRIPTS_DIR}/bootstrap"
+
+echo "==> Recompiling wakaama..."
+eval "cd ${PROJECT_ROOT_DIR}/build"
+make
+cd -

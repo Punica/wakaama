@@ -1,0 +1,33 @@
+#!/bin/sh
+
+set -e
+
+PROJECT_ROOT_DIR="$(cd $(dirname "$0")/.. && pwd -P)"
+PROJECT_BUILD_DIR="${PROJECT_ROOT_DIR}/build"
+SCRIPTS_DIR="${PROJECT_ROOT_DIR}/script"
+
+build_wakaama () {
+    cmake_arguments=""
+    eval "rm -rf ${PROJECT_BUILD_DIR}" | true
+    eval "mkdir ${PROJECT_BUILD_DIR}"
+
+    if ! [ -z "$1" ]; then
+        cmake_arguments="${cmake_arguments} $1"
+    fi
+
+    if ! [ $? -eq 0 ]; then
+        echo "Failed to create build directory!"
+        return 1
+    fi
+
+    eval "cd ${PROJECT_BUILD_DIR}"
+    echo "cmake ${cmake_arguments} ${PROJECT_ROOT_DIR}"
+    eval "cmake ${cmake_arguments} ${PROJECT_ROOT_DIR}"
+    make
+    cd -
+}
+
+eval "${SCRIPTS_DIR}/bootstrap"
+
+echo "==> Building wakaama..."
+build_wakaama "$@"
