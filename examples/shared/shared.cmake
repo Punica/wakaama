@@ -22,8 +22,8 @@ if(DTLS)
 	set(SHARED_DEFINITIONS -DWITH_TINYDTLS)
 else()
     set(SHARED_SOURCES
-        ${SHARED_SOURCES}
-        ${SHARED_SOURCES_DIR}/connection.c)
+		${SHARED_SOURCES} 
+		${SHARED_SOURCES_DIR}/connection.c)
 
     set(SHARED_INCLUDE_DIRS ${SHARED_SOURCES_DIR})
 endif()
