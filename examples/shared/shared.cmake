@@ -13,19 +13,19 @@ elseif(DTLS)
     include(${CMAKE_CURRENT_LIST_DIR}/tinydtls.cmake)
 
     set(SHARED_SOURCES
-        ${SHARED_SOURCES}
-        ${TINYDTLS_SOURCES}
-        ${SHARED_SOURCES_DIR}/dtlsconnection.c)
-
-    set(SHARED_INCLUDE_DIRS
-        ${SHARED_SOURCES_DIR}
-        ${TINYDTLS_SOURCES_DIR})
-
-    set(SHARED_DEFINITIONS -DWITH_TINYDTLS)
+	    ${SHARED_SOURCES}
+		${TINYDTLS_SOURCES}
+		${SHARED_SOURCES_DIR}/dtlsconnection.c)
+    
+	set(SHARED_INCLUDE_DIRS
+		${SHARED_SOURCES_DIR} 
+		${TINYDTLS_SOURCES_DIR})
+    
+	set(SHARED_DEFINITIONS -DWITH_TINYDTLS)
 else()
     set(SHARED_SOURCES
-        ${SHARED_SOURCES}
-        ${SHARED_SOURCES_DIR}/connection.c)
+		${SHARED_SOURCES} 
+		${SHARED_SOURCES_DIR}/connection.c)
 
     set(SHARED_INCLUDE_DIRS ${SHARED_SOURCES_DIR})
 endif()
