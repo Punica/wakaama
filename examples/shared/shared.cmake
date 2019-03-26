@@ -7,7 +7,9 @@ set(SHARED_SOURCES
     ${SHARED_SOURCES_DIR}/platform.c
 	${SHARED_SOURCES_DIR}/memtrace.c)
 
-if(DTLS)
+if(CUSTOM_CONNECTION_HANDLING)
+    # Don't add any sources
+elseif(DTLS)
     include(${CMAKE_CURRENT_LIST_DIR}/tinydtls.cmake)
 
     set(SHARED_SOURCES
