@@ -1068,9 +1068,9 @@ uint8_t registration_handleRequest(lwm2m_context_t * contextP,
         char * name = NULL;
         char * type = NULL;
         uint32_t lifetime;
-        char * msisdn;
-        char * altPath;
-        char * version;
+        char * msisdn = NULL;
+        char * altPath = NULL;
+        char * version = NULL;
         lwm2m_binding_t binding;
         lwm2m_client_object_t * objects;
         bool supportJSON;
@@ -1098,14 +1098,20 @@ uint8_t registration_handleRequest(lwm2m_context_t * contextP,
             if (version == NULL)
             {
                 if (name != NULL) lwm2m_free(name);
+                if (type != NULL) lwm2m_free(type);
                 if (msisdn != NULL) lwm2m_free(msisdn);
+                if (objects != NULL) prv_freeClientObjectList(objects);
+                if (altPath != NULL) lwm2m_free(altPath);
                 return COAP_400_BAD_REQUEST;
             }
             // Endpoint client name is mandatory
             if (name == NULL)
             {
                 lwm2m_free(version);
+                if (type != NULL) lwm2m_free(type);
                 if (msisdn != NULL) lwm2m_free(msisdn);
+                if (objects != NULL) prv_freeClientObjectList(objects);
+                if (altPath != NULL) lwm2m_free(altPath);
                 return COAP_400_BAD_REQUEST;
             }
             // Client name must match indentifier used during SSL handshake (if used)
@@ -1113,7 +1119,10 @@ uint8_t registration_handleRequest(lwm2m_context_t * contextP,
             {
                 lwm2m_free(version);
                 lwm2m_free(name);
+                if (type != NULL) lwm2m_free(type);
                 if (msisdn != NULL) lwm2m_free(msisdn);
+                if (objects != NULL) prv_freeClientObjectList(objects);
+                if (altPath != NULL) lwm2m_free(altPath);
                 return COAP_400_BAD_REQUEST;
             }
             // Object list is mandatory
@@ -1121,7 +1130,9 @@ uint8_t registration_handleRequest(lwm2m_context_t * contextP,
             {
                 lwm2m_free(version);
                 lwm2m_free(name);
+                if (type != NULL) lwm2m_free(type);
                 if (msisdn != NULL) lwm2m_free(msisdn);
+                if (altPath != NULL) lwm2m_free(altPath);
                 return COAP_400_BAD_REQUEST;
             }
             // version must be 1.0
@@ -1130,7 +1141,10 @@ uint8_t registration_handleRequest(lwm2m_context_t * contextP,
             {
                 lwm2m_free(version);
                 lwm2m_free(name);
+                prv_freeClientObjectList(objects);
+                if (type != NULL) lwm2m_free(type);
                 if (msisdn != NULL) lwm2m_free(msisdn);
+                if (altPath != NULL) lwm2m_free(altPath);
                 return COAP_412_PRECONDITION_FAILED;
             }
             lwm2m_free(version);
@@ -1146,6 +1160,7 @@ uint8_t registration_handleRequest(lwm2m_context_t * contextP,
                 // we reset this registration
                 lwm2m_free(clientP->name);
                 if (clientP->msisdn != NULL) lwm2m_free(clientP->msisdn);
+                if (clientP->type != NULL) lwm2m_free(clientP->type);
                 if (clientP->altPath != NULL) lwm2m_free(clientP->altPath);
                 prv_freeClientObjectList(clientP->objectList);
                 clientP->objectList = NULL;
@@ -1170,6 +1185,7 @@ uint8_t registration_handleRequest(lwm2m_context_t * contextP,
                 {
                     lwm2m_free(name);
                     lwm2m_free(altPath);
+                    if (type != NULL) lwm2m_free(type);
                     if (msisdn != NULL) lwm2m_free(msisdn);
                     prv_freeClientObjectList(objects);
                     return COAP_500_INTERNAL_SERVER_ERROR;
@@ -1215,6 +1231,7 @@ uint8_t registration_handleRequest(lwm2m_context_t * contextP,
             if (name != NULL)
             {
                 lwm2m_free(name);
+                if (type != NULL) lwm2m_free(type);
                 if (msisdn != NULL) lwm2m_free(msisdn);
                 return COAP_400_BAD_REQUEST;
             }
