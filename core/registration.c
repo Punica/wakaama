@@ -1157,6 +1157,7 @@ uint8_t registration_handleRequest(lwm2m_context_t * contextP,
             clientP = prv_getClientByName(contextP, name);
             if (clientP != NULL)
             {
+                // we reset this registration 
                 lwm2m_free(clientP->name);
                 if (clientP->msisdn != NULL) lwm2m_free(clientP->msisdn);
                 if (clientP->type != NULL) lwm2m_free(clientP->type);
